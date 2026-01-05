@@ -1,0 +1,311 @@
+.export-panel {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.export-card {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem;
+  max-width: 900px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.export-card h2 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 2rem;
+}
+
+.export-description {
+  color: #7f8c8d;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.export-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.setting-group {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.setting-group h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item label {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.setting-item select {
+  padding: 0.5rem 1rem;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  background: white;
+  min-width: 150px;
+}
+
+.setting-item select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.checkbox-item input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+.checkbox-item label {
+  cursor: pointer;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.export-summary {
+  background: #e8eaff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.export-summary h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  color: #2c3e50;
+}
+
+.summary-row strong {
+  color: #667eea;
+}
+
+.export-btn {
+  width: 100%;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.export-progress {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.export-progress h3 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 30px;
+  background: #ecf0f1;
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.5s ease;
+}
+
+.export-progress p {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+.processing-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.processing-steps .step {
+  color: #7f8c8d;
+  font-size: 0.95rem;
+}
+
+.processing-steps .step.complete {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.export-complete {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.success-icon-large {
+  width: 100px;
+  height: 100px;
+  background: #27ae60;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: bold;
+  margin: 0 auto 1.5rem;
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.export-complete h3 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.export-complete p {
+  color: #7f8c8d;
+  margin-bottom: 2rem;
+}
+
+.complete-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.download-btn,
+.share-btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.download-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.share-btn {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.share-btn:hover {
+  background: #667eea;
+  color: white;
+}
+
+.export-details {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.export-details h4 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  color: #2c3e50;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .export-card {
+    padding: 1.5rem;
+  }
+
+  .complete-actions {
+    flex-direction: column;
+  }
+
+  .download-btn,
+  .share-btn {
+    width: 100%;
+  }
+}
