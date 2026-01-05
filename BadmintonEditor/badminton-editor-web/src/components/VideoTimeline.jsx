@@ -114,7 +114,12 @@ function VideoTimeline({ videoUrl, segments, onSegmentUpdate, onExport }) {
         <div className="segment-info">
           <h3>Detected Segments ({filteredSegments.length})</h3>
           <p className="ai-note">
-            🤖 AI has automatically detected key moments. Review and adjust as needed.
+            ⚠️ <strong>DEMO模式：</strong>这些是根据视频时长自动生成的演示片段，不是真实的AI检测结果。
+            未来版本将集成真正的AI分析功能来检测发球、得分等关键时刻。
+          </p>
+          <p className="ai-note" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+            <strong>DEMO Mode:</strong> These segments are auto-generated for demonstration based on video duration, 
+            not actual AI detection. Real AI analysis will be implemented in future updates.
           </p>
         </div>
       </div>

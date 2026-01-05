@@ -54,8 +54,11 @@ function VideoUploader({ onVideoUpload }) {
       <div className="upload-card">
         <h2>Upload Your Badminton Match Video</h2>
         <p className="upload-description">
-          Upload a video of your badminton match and let AI automatically detect serves, 
-          scores, and key moments. Supports multiple courts.
+          上传您的羽毛球比赛视频。当前为<strong>演示版本</strong>，视频片段会根据时长自动生成，未来将集成AI来检测发球、得分等关键时刻。
+        </p>
+        <p className="upload-description" style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+          Upload your badminton match video. This is a <strong>DEMO version</strong> - segments are auto-generated. 
+          Future updates will include real AI detection for serves, scores, and key moments.
         </p>
 
         <div

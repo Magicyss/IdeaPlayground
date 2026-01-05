@@ -14,14 +14,34 @@ function App() {
     setVideoFile(file)
     const url = URL.createObjectURL(file)
     setVideoUrl(url)
-    setCurrentView('edit')
     
-    // Initialize with default segments (placeholder for AI detection)
-    setSegments([
-      { id: 1, start: 0, end: 30, type: 'serve', court: 1 },
-      { id: 2, start: 30, end: 60, type: 'rally', court: 1 },
-      { id: 3, start: 60, end: 90, type: 'serve', court: 2 }
-    ])
+    // Get video duration to generate realistic demo segments
+    const video = document.createElement('video')
+    video.src = url
+    video.onloadedmetadata = () => {
+      const duration = video.duration
+      
+      // Generate demo segments based on actual video duration
+      // Note: These are DEMO segments. Real AI detection will be implemented in future updates.
+      const demoSegments = []
+      const segmentCount = Math.min(5, Math.max(3, Math.floor(duration / 20)))
+      const segmentDuration = duration / segmentCount
+      
+      for (let i = 0; i < segmentCount; i++) {
+        const types = ['serve', 'rally', 'score']
+        const courts = [1, 2]
+        demoSegments.push({
+          id: i + 1,
+          start: i * segmentDuration,
+          end: (i + 1) * segmentDuration,
+          type: types[i % types.length],
+          court: courts[i % courts.length]
+        })
+      }
+      
+      setSegments(demoSegments)
+      setCurrentView('edit')
+    }
   }
 
   const handleSegmentUpdate = (updatedSegments) => {
