@@ -42,6 +42,17 @@ function App() {
       setSegments(demoSegments)
       setCurrentView('edit')
     }
+    
+    video.onerror = () => {
+      // If video fails to load, still proceed with default segments
+      console.error('Failed to load video metadata, using default segments')
+      setSegments([
+        { id: 1, start: 0, end: 30, type: 'serve', court: 1 },
+        { id: 2, start: 30, end: 60, type: 'rally', court: 1 },
+        { id: 3, start: 60, end: 90, type: 'score', court: 2 }
+      ])
+      setCurrentView('edit')
+    }
   }
 
   const handleSegmentUpdate = (updatedSegments) => {
