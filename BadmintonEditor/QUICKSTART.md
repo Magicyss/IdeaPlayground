@@ -43,11 +43,20 @@ npm run dev
 
 ## Optional: Run the Backend API
 
-For AI-powered features (future integration):
+For AI-powered video analysis:
 
 ```bash
 # Navigate to backend directory
 cd BadmintonEditor/backend
+
+# Install Python dependencies (first time only)
+pip install -r requirements.txt
+
+# Start the API server
+python main.py
+# OR use uvicorn directly:
+# uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
 # Install Python dependencies (first time only)
 pip install -r requirements.txt

@@ -227,4 +227,5 @@ if __name__ == "__main__":
     - Multi-court support
     """)
     
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    # Use import string for reload support
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

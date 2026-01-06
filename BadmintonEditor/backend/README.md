@@ -53,11 +53,18 @@ pip install -r requirements.txt
 
 ### Running the Server
 
+**Method 1: Using the main.py script (recommended)**
 ```bash
 python main.py
 ```
 
-The API will be available at `http://localhost:8000`
+**Method 2: Using uvicorn directly**
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API will be available at `http://localhost:8000`  
+Interactive API documentation: `http://localhost:8000/docs`
 
 ## API Endpoints
 
