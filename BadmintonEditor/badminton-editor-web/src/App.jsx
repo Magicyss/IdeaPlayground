@@ -4,54 +4,89 @@ import VideoUploader from './components/VideoUploader'
 import VideoTimeline from './components/VideoTimeline'
 import ExportPanel from './components/ExportPanel'
 
+const API_BASE_URL = 'http://localhost:8000'
+
 function App() {
   const [videoFile, setVideoFile] = useState(null)
   const [videoUrl, setVideoUrl] = useState(null)
   const [segments, setSegments] = useState([])
   const [currentView, setCurrentView] = useState('upload') // upload, edit, export
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisError, setAnalysisError] = useState(null)
 
-  const handleVideoUpload = (file) => {
+  const handleVideoUpload = async (file) => {
     setVideoFile(file)
     const url = URL.createObjectURL(file)
     setVideoUrl(url)
+    setAnalysisError(null)
     
-    // Get video duration to generate realistic demo segments
-    const video = document.createElement('video')
-    video.src = url
-    video.onloadedmetadata = () => {
-      const duration = video.duration
+    // Show edit view immediately with loading state
+    setCurrentView('edit')
+    setIsAnalyzing(true)
+    
+    try {
+      // Upload video to backend
+      const formData = new FormData()
+      formData.append('file', file)
       
-      // Generate demo segments based on actual video duration
-      // Note: These are DEMO segments. Real AI detection will be implemented in future updates.
-      const demoSegments = []
-      const segmentCount = Math.min(5, Math.max(3, Math.floor(duration / 20)))
-      const segmentDuration = duration / segmentCount
+      const uploadResponse = await fetch(`${API_BASE_URL}/api/upload`, {
+        method: 'POST',
+        body: formData
+      })
       
-      for (let i = 0; i < segmentCount; i++) {
-        const types = ['serve', 'rally', 'score']
-        const courts = [1, 2]
-        demoSegments.push({
-          id: i + 1,
-          start: i * segmentDuration,
-          end: (i + 1) * segmentDuration,
-          type: types[i % types.length],
-          court: courts[i % courts.length]
-        })
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload video')
       }
       
-      setSegments(demoSegments)
-      setCurrentView('edit')
-    }
-    
-    video.onerror = () => {
-      // If video fails to load, still proceed with default segments
-      console.error('Failed to load video metadata, using default segments')
-      setSegments([
-        { id: 1, start: 0, end: 30, type: 'serve', court: 1 },
-        { id: 2, start: 30, end: 60, type: 'rally', court: 1 },
-        { id: 3, start: 60, end: 90, type: 'score', court: 2 }
-      ])
-      setCurrentView('edit')
+      const uploadData = await uploadResponse.json()
+      const newVideoId = uploadData.video_id
+      
+      // Analyze video using AI
+      const analyzeResponse = await fetch(`${API_BASE_URL}/api/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ video_id: newVideoId })
+      })
+      
+      if (!analyzeResponse.ok) {
+        throw new Error('Failed to analyze video')
+      }
+      
+      const analysisData = await analyzeResponse.json()
+      setSegments(analysisData.segments)
+      setIsAnalyzing(false)
+      
+    } catch (error) {
+      console.error('Error processing video:', error)
+      setAnalysisError(error.message)
+      setIsAnalyzing(false)
+      
+      // Fallback to local demo segments if backend fails
+      const video = document.createElement('video')
+      video.src = url
+      video.onloadedmetadata = () => {
+        const duration = video.duration
+        const demoSegments = []
+        const segmentCount = Math.min(5, Math.max(3, Math.floor(duration / 20)))
+        const segmentDuration = duration / segmentCount
+        
+        for (let i = 0; i < segmentCount; i++) {
+          const types = ['serve', 'rally', 'score']
+          const courts = [1, 2]
+          demoSegments.push({
+            id: i + 1,
+            start: i * segmentDuration,
+            end: (i + 1) * segmentDuration,
+            type: types[i % types.length],
+            court: courts[i % courts.length],
+            confidence: 0.75
+          })
+        }
+        
+        setSegments(demoSegments)
+      }
     }
   }
 
@@ -105,6 +140,8 @@ function App() {
             segments={segments}
             onSegmentUpdate={handleSegmentUpdate}
             onExport={() => setCurrentView('export')}
+            isAnalyzing={isAnalyzing}
+            analysisError={analysisError}
           />
         )}
 

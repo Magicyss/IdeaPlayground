@@ -4,6 +4,13 @@ from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
 import os
+import shutil
+from pathlib import Path
+from video_analyzer import analyze_badminton_video
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Badminton Video Editor API",
@@ -19,6 +26,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Storage for uploaded videos and their analysis
+UPLOAD_DIR = Path("uploads")
+PROCESSED_DIR = Path("processed")
+video_storage = {}  # video_id -> {filename, path, analysis}
 
 # Data models
 class VideoSegment(BaseModel):
@@ -59,8 +71,23 @@ async def upload_video(file: UploadFile = File(...)):
     if not file.content_type.startswith('video/'):
         raise HTTPException(status_code=400, detail="File must be a video")
     
-    # In production, save to storage and return video_id
-    video_id = f"video_{len(file.filename)}"
+    # Generate unique video ID
+    import time
+    video_id = f"video_{int(time.time())}_{file.filename}"
+    
+    # Save file to uploads directory
+    file_path = UPLOAD_DIR / file.filename
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Store video info
+    video_storage[video_id] = {
+        "filename": file.filename,
+        "path": str(file_path),
+        "analysis": None
+    }
+    
+    logger.info(f"Video uploaded: {video_id} -> {file_path}")
     
     return {
         "video_id": video_id,
@@ -74,43 +101,76 @@ async def analyze_video(video_id: str):
     """
     Analyze video and detect key moments using AI
     
-    This is a placeholder implementation. In production, this would:
-    1. Load the video using OpenCV
-    2. Use YOLO for shuttlecock detection
-    3. Use MediaPipe for pose estimation (serve detection)
-    4. Detect court boundaries
-    5. Identify score moments
-    6. Return timestamped segments
+    Uses OpenCV for motion detection and computer vision to identify:
+    1. Serves (motion patterns)
+    2. Rallies (continuous action)
+    3. Scores (pauses in action)
+    4. Court boundaries
     """
     
-    # Mock AI analysis results
-    mock_segments = [
-        VideoSegment(id=1, start=0.0, end=15.5, type="serve", court=1, confidence=0.95),
-        VideoSegment(id=2, start=15.5, end=45.2, type="rally", court=1, confidence=0.89),
-        VideoSegment(id=3, start=45.2, end=47.0, type="score", court=1, confidence=0.92),
-        VideoSegment(id=4, start=47.0, end=62.5, type="serve", court=2, confidence=0.87),
-        VideoSegment(id=5, start=62.5, end=95.0, type="rally", court=2, confidence=0.88),
-        VideoSegment(id=6, start=95.0, end=97.5, type="score", court=2, confidence=0.91),
-    ]
+    # Check if video exists
+    if video_id not in video_storage:
+        raise HTTPException(status_code=404, detail="Video not found")
     
-    return AnalysisResult(
-        video_id=video_id,
-        segments=mock_segments,
-        total_duration=120.0,
-        courts_detected=2
-    )
+    video_info = video_storage[video_id]
+    video_path = video_info["path"]
+    
+    # Check if already analyzed
+    if video_info["analysis"]:
+        logger.info(f"Returning cached analysis for {video_id}")
+        return AnalysisResult(**video_info["analysis"])
+    
+    logger.info(f"Starting AI analysis for {video_id}")
+    
+    try:
+        # Perform actual video analysis
+        analysis_result = analyze_badminton_video(video_path)
+        
+        # Convert to API format
+        segments = [
+            VideoSegment(
+                id=seg['id'],
+                start=seg['start'],
+                end=seg['end'],
+                type=seg['type'],
+                court=seg['court'],
+                confidence=seg['confidence']
+            )
+            for seg in analysis_result['segments']
+        ]
+        
+        result = AnalysisResult(
+            video_id=video_id,
+            segments=segments,
+            total_duration=analysis_result['total_duration'],
+            courts_detected=analysis_result['courts_detected']
+        )
+        
+        # Cache the analysis
+        video_info["analysis"] = result.dict()
+        
+        logger.info(f"Analysis complete for {video_id}: {len(segments)} segments detected")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error analyzing video {video_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error analyzing video: {str(e)}")
 
 @app.get("/api/segments/{video_id}", response_model=List[VideoSegment])
 async def get_segments(video_id: str):
     """
     Get detected segments for a video
     """
-    # In production, retrieve from database
-    mock_segments = [
-        VideoSegment(id=1, start=0.0, end=15.5, type="serve", court=1, confidence=0.95),
-        VideoSegment(id=2, start=15.5, end=45.2, type="rally", court=1, confidence=0.89),
-    ]
-    return mock_segments
+    if video_id not in video_storage:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    video_info = video_storage[video_id]
+    
+    if not video_info["analysis"]:
+        raise HTTPException(status_code=400, detail="Video not analyzed yet. Call /api/analyze first")
+    
+    return video_info["analysis"]["segments"]
 
 @app.post("/api/export")
 async def export_video(request: ExportRequest):
@@ -141,15 +201,20 @@ async def health_check():
     return {"status": "healthy"}
 
 if __name__ == "__main__":
-    # Create uploads directory if it doesn't exist
-    os.makedirs("uploads", exist_ok=True)
-    os.makedirs("processed", exist_ok=True)
+    # Create required directories
+    UPLOAD_DIR.mkdir(exist_ok=True)
+    PROCESSED_DIR.mkdir(exist_ok=True)
     
     print("""
-    🏸 Badminton Video Editor API Server
-    ====================================
+    🏸 Badminton Video Editor API Server - AI ENABLED
+    =================================================
     Server starting on http://localhost:8000
     API Documentation: http://localhost:8000/docs
+    
+    Features:
+    - Real-time video analysis using OpenCV
+    - Motion-based serve/rally/score detection
+    - Multi-court support
     """)
     
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

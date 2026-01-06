@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './VideoTimeline.css'
 
-function VideoTimeline({ videoUrl, segments, onSegmentUpdate, onExport }) {
+function VideoTimeline({ videoUrl, segments, onSegmentUpdate, onExport, isAnalyzing, analysisError }) {
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -113,14 +113,37 @@ function VideoTimeline({ videoUrl, segments, onSegmentUpdate, onExport }) {
 
         <div className="segment-info">
           <h3>Detected Segments ({filteredSegments.length})</h3>
-          <p className="ai-note">
-            ⚠️ <strong>DEMO模式：</strong>这些是根据视频时长自动生成的演示片段，不是真实的AI检测结果。
-            未来版本将集成真正的AI分析功能来检测发球、得分等关键时刻。
-          </p>
-          <p className="ai-note" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
-            <strong>DEMO Mode:</strong> These segments are auto-generated for demonstration based on video duration, 
-            not actual AI detection. Real AI analysis will be implemented in future updates.
-          </p>
+          {isAnalyzing ? (
+            <div className="ai-note analyzing">
+              <strong>🤖 AI分析中... / Analyzing with AI...</strong>
+              <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                使用OpenCV进行运动检测，识别发球、得分和比赛关键时刻。请稍候...
+              </p>
+              <p style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                Using OpenCV for motion detection to identify serves, scores, and key moments. Please wait...
+              </p>
+            </div>
+          ) : analysisError ? (
+            <div className="ai-note error">
+              <strong>⚠️ AI分析失败 / AI Analysis Failed</strong>
+              <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                无法连接到AI后端服务。使用本地演示片段。错误: {analysisError}
+              </p>
+              <p style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                Cannot connect to AI backend. Using local demo segments. Error: {analysisError}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="ai-note success">
+                <strong>✅ AI分析完成 / AI Analysis Complete</strong>
+              </p>
+              <p className="ai-note" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                使用OpenCV运动检测技术分析视频，识别出{filteredSegments.length}个片段。
+                Analyzed using OpenCV motion detection. {filteredSegments.length} segments detected.
+              </p>
+            </>
+          )}
         </div>
       </div>
 

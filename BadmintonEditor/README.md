@@ -8,17 +8,19 @@ A cross-platform video editing application that automatically segments badminton
 
 ## 🌟 Features
 
-### Current (v1.0 - Web Application)
+### Current (v2.0 - AI-Powered Analysis)
 - ✅ **Web-based Video Editor** - Fully functional website accessible from any browser
 - ✅ **Video Upload Interface** - Drag & drop or file selection for easy video uploads
-- ✅ **Interactive Timeline Editor** - Visual timeline showing detected segments
-- ✅ **Smart Segmentation** - AI-ready architecture for serve/score detection
+- ✅ **AI-Powered Detection** - Real-time OpenCV-based motion detection for serves, rallies, and scores
+- ✅ **Interactive Timeline Editor** - Visual timeline showing AI-detected segments
+- ✅ **Smart Segmentation** - Automatic identification of key moments using computer vision
 - ✅ **Multi-Court Support** - Filter and view specific courts in multi-court recordings
 - ✅ **Export Configuration** - Customizable quality, format, and content settings
 - ✅ **Responsive Design** - Works on desktop, tablet, and mobile browsers
+- ✅ **Confidence Scores** - Each detected segment includes AI confidence rating
 
 ### Planned Features
-- 🔄 **AI Detection Backend** - Automatic serve, rally, and score detection using computer vision
+- 🔄 **Advanced AI Models** - Integration of YOLO for shuttlecock tracking and MediaPipe for player pose estimation
 - 🔄 **Player Tracking** - Identify and follow specific players throughout the match
 - 🔄 **Highlight Reels** - Auto-generate personalized highlight videos
 - 🔄 **Mobile Apps** - Native iOS and Android applications
@@ -34,9 +36,11 @@ A cross-platform video editing application that automatically segments badminton
 
 ### Backend (AI Service)
 - **Framework**: FastAPI (Python)
-- **Video Processing**: OpenCV, FFmpeg
-- **AI Models**: YOLO for object detection, MediaPipe for pose estimation
+- **Video Processing**: OpenCV for real-time motion analysis
+- **AI Detection**: Motion-based segmentation for serves, rallies, and scores
+- **Future AI Models**: YOLO for shuttlecock detection, MediaPipe for pose estimation
 - **API**: RESTful API with CORS support
+- **FFmpeg**: Video encoding and export processing
 
 ### Cross-Platform Expansion (Planned)
 - **Mobile**: React Native with Expo

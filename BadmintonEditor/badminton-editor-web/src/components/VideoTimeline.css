@@ -134,6 +134,31 @@
   font-size: 0.9rem;
 }
 
+.ai-note.analyzing {
+  background: #e8f4fd;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+  color: #2c3e50;
+}
+
+.ai-note.error {
+  background: #ffe8e8;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #e74c3c;
+  color: #c0392b;
+}
+
+.ai-note.success {
+  background: #e8f8f0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #27ae60;
+  color: #27ae60;
+  margin-bottom: 0.5rem;
+}
+
 .timeline-visualization {
   background: white;
   padding: 1.5rem;

@@ -4,19 +4,37 @@ This is the Python backend service for AI-powered video analysis of badminton ma
 
 ## Features
 
-- Video processing and analysis
-- Shuttlecock tracking using computer vision
-- Serve detection using pose estimation
-- Court boundary identification
-- Score detection
-- Multi-court support
+- ✅ **Real-time Video Analysis** - Processes videos using OpenCV
+- ✅ **Motion Detection** - Identifies movement patterns for serves and rallies
+- ✅ **Scene Segmentation** - Automatically detects pauses and transitions
+- ✅ **Multi-Court Detection** - Estimates number of courts in recording
+- ✅ **Confidence Scoring** - Provides reliability scores for each detection
+- 🔄 **Shuttlecock Tracking** (Coming Soon) - YOLO-based object detection
+- 🔄 **Pose Estimation** (Coming Soon) - MediaPipe for player tracking
 
 ## Technology Stack
 
 - **FastAPI** - Modern Python web framework
-- **OpenCV** - Video processing
-- **YOLO/MediaPipe** - Object detection and pose estimation
-- **FFmpeg** - Video encoding/decoding
+- **OpenCV** - Computer vision and video processing
+- **NumPy** - Numerical computations
+- **FFmpeg** - Video encoding/decoding (future)
+- **YOLO/MediaPipe** - Advanced AI models (planned)
+
+## How It Works
+
+### Motion Detection Algorithm
+
+1. **Frame Analysis**: Each video frame is converted to grayscale and analyzed
+2. **Motion Scoring**: Frame differences are calculated to detect movement
+3. **Pattern Recognition**: High motion = rallies, Low motion = serves/scores
+4. **Segmentation**: Continuous motion patterns are grouped into segments
+5. **Classification**: Segments are classified based on duration and motion intensity
+
+### Detection Types
+
+- **Serve**: Short low-motion periods (preparation phase)
+- **Rally**: Extended high-motion periods (active play)
+- **Score**: Low-motion after rally (point scored, reset)
 
 ## Setup
 
