@@ -4,7 +4,8 @@ import VideoUploader from './components/VideoUploader'
 import VideoTimeline from './components/VideoTimeline'
 import ExportPanel from './components/ExportPanel'
 
-const API_BASE_URL = 'http://localhost:8000'
+// API configuration - can be overridden via environment variable
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 function App() {
   const [videoFile, setVideoFile] = useState(null)

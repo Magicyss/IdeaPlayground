@@ -5,6 +5,8 @@ from typing import List, Optional
 import uvicorn
 import os
 import shutil
+import uuid
+import re
 from pathlib import Path
 from video_analyzer import analyze_badminton_video
 import logging
@@ -71,18 +73,26 @@ async def upload_video(file: UploadFile = File(...)):
     if not file.content_type.startswith('video/'):
         raise HTTPException(status_code=400, detail="File must be a video")
     
-    # Generate unique video ID
+    # Generate unique video ID and secure filename
     import time
-    video_id = f"video_{int(time.time())}_{file.filename}"
+    
+    # Sanitize filename - keep only alphanumeric, dash, underscore, and dot
+    safe_filename = re.sub(r'[^\w\-.]', '_', file.filename)
+    unique_id = str(uuid.uuid4())
+    video_id = f"video_{int(time.time())}_{unique_id[:8]}"
+    
+    # Use unique filename to prevent collisions
+    file_extension = Path(safe_filename).suffix
+    unique_filename = f"{video_id}{file_extension}"
     
     # Save file to uploads directory
-    file_path = UPLOAD_DIR / file.filename
+    file_path = UPLOAD_DIR / unique_filename
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
     # Store video info
     video_storage[video_id] = {
-        "filename": file.filename,
+        "filename": safe_filename,
         "path": str(file_path),
         "analysis": None
     }
@@ -91,7 +101,7 @@ async def upload_video(file: UploadFile = File(...)):
     
     return {
         "video_id": video_id,
-        "filename": file.filename,
+        "filename": safe_filename,
         "status": "uploaded",
         "message": "Video uploaded successfully. Ready for analysis."
     }
