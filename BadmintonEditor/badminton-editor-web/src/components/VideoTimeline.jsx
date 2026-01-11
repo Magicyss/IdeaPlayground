@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './VideoTimeline.css'
 
-function VideoTimeline({ videoUrl, segments, onSegmentUpdate, onExport, isAnalyzing, analysisError }) {
+function VideoTimeline({ videoUrl, segments, onSegmentUpdate, onExport, isAnalyzing, analysisError, analysisProgress = 0 }) {
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -117,11 +117,21 @@ function VideoTimeline({ videoUrl, segments, onSegmentUpdate, onExport, isAnalyz
             <div className="ai-note analyzing">
               <strong>🤖 AI分析中... / Analyzing with AI...</strong>
               <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                使用OpenCV进行运动检测，识别发球、得分和比赛关键时刻。请稍候...
+                使用OpenCV进行运动检测，识别发球、得分和比赛关键时刻。
               </p>
-              <p style={{ fontSize: '0.85rem', opacity: 0.8 }}>
-                Using OpenCV for motion detection to identify serves, scores, and key moments. Please wait...
-              </p>
+              <div className="progress-bar-container" style={{ margin: '1rem 0' }}>
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ width: `${analysisProgress}%` }}
+                  >
+                    {analysisProgress > 0 && `${analysisProgress}%`}
+                  </div>
+                </div>
+                <p style={{ fontSize: '0.85rem', marginTop: '0.5rem', opacity: 0.8 }}>
+                  Processing frames for speed optimization (every 3rd frame analyzed)
+                </p>
+              </div>
             </div>
           ) : analysisError ? (
             <div className="ai-note error">

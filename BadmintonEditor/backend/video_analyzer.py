@@ -21,22 +21,31 @@ class BadmintonVideoAnalyzer:
     - Court boundaries
     """
     
-    def __init__(self):
+    def __init__(self, frame_skip=3):
+        """
+        Initialize analyzer
+        
+        Args:
+            frame_skip: Process every Nth frame for speed (1=all frames, 3=every 3rd frame)
+        """
         self.motion_threshold = 500  # Threshold for detecting significant motion
         self.pause_threshold = 2.0   # Seconds of low motion to detect score/pause
         self.min_rally_duration = 3.0  # Minimum rally duration in seconds
+        self.frame_skip = frame_skip  # Frame skipping for faster processing
         
-    def analyze_video(self, video_path: str) -> Dict:
+    def analyze_video(self, video_path: str, progress_callback=None) -> Dict:
         """
         Analyze a badminton video and detect key moments
         
         Args:
             video_path: Path to the video file
+            progress_callback: Optional callback function (current_frame, total_frames)
             
         Returns:
             Dictionary containing segments and metadata
         """
         logger.info(f"Starting analysis of video: {video_path}")
+        logger.info(f"Frame skip: {self.frame_skip}x (processing every {self.frame_skip} frames for speed)")
         
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -47,9 +56,11 @@ class BadmintonVideoAnalyzer:
         duration = total_frames / fps if fps > 0 else 0
         
         logger.info(f"Video info: {total_frames} frames, {fps} fps, {duration:.2f}s duration")
+        effective_frames = total_frames // self.frame_skip
+        logger.info(f"Processing {effective_frames} frames ({100/self.frame_skip:.1f}% of total) for speed")
         
-        # Detect motion patterns
-        motion_data = self._analyze_motion(cap)
+        # Detect motion patterns with progress tracking
+        motion_data = self._analyze_motion(cap, progress_callback)
         
         # Reset video capture
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -68,26 +79,38 @@ class BadmintonVideoAnalyzer:
             'segments': segments,
             'total_duration': duration,
             'courts_detected': courts_detected,
-            'fps': fps
+            'fps': fps,
+            'total_frames': total_frames
         }
     
-    def _analyze_motion(self, cap: cv2.VideoCapture) -> List[float]:
+    def _analyze_motion(self, cap: cv2.VideoCapture, progress_callback=None) -> List[float]:
         """
         Analyze motion in each frame using frame differencing
         
+        Args:
+            cap: Video capture object
+            progress_callback: Optional callback function (current, total)
+            
         Returns:
-            List of motion scores for each frame
+            List of motion scores for sampled frames
         """
         motion_scores = []
         prev_frame = None
         frame_count = 0
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
-        logger.info("Analyzing motion patterns...")
+        logger.info("Analyzing motion patterns with frame skipping for speed...")
         
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
+            
+            frame_count += 1
+            
+            # Skip frames for faster processing
+            if frame_count % self.frame_skip != 0:
+                continue
             
             # Convert to grayscale and blur
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -105,13 +128,21 @@ class BadmintonVideoAnalyzer:
                 motion_scores.append(0.0)
             
             prev_frame = gray
-            frame_count += 1
             
-            # Log progress every 100 frames
-            if frame_count % 100 == 0:
-                logger.debug(f"Processed {frame_count} frames")
+            # Report progress
+            if progress_callback and frame_count % 30 == 0:
+                progress_callback(frame_count, total_frames)
+            
+            # Log progress every 300 frames
+            if frame_count % 300 == 0:
+                progress_pct = (frame_count / total_frames) * 100 if total_frames > 0 else 0
+                logger.info(f"Processed {frame_count}/{total_frames} frames ({progress_pct:.1f}%)")
         
-        logger.info(f"Motion analysis complete: {len(motion_scores)} frames analyzed")
+        # Final progress update
+        if progress_callback:
+            progress_callback(total_frames, total_frames)
+        
+        logger.info(f"Motion analysis complete: {len(motion_scores)} frames analyzed (skip={self.frame_skip})")
         return motion_scores
     
     def _detect_segments(self, motion_data: List[float], fps: float, duration: float) -> List[Dict]:
@@ -257,15 +288,23 @@ class BadmintonVideoAnalyzer:
         return segments
 
 
-def analyze_badminton_video(video_path: str) -> Dict:
+def analyze_badminton_video(video_path: str, progress_callback=None, frame_skip=3) -> Dict:
     """
     Convenience function to analyze a badminton video
     
     Args:
         video_path: Path to the video file
+        progress_callback: Optional callback function (current_frame, total_frames)
+        frame_skip: Process every Nth frame (3 = 3x faster, 5 = 5x faster)
         
     Returns:
         Dictionary with analysis results
+        
+    Performance Tips:
+    - frame_skip=3: ~3x faster, good for most videos
+    - frame_skip=5: ~5x faster, still decent accuracy
+    - frame_skip=10: ~10x faster, may miss quick actions
+    - For GPU acceleration, consider using YOLO or other deep learning models
     """
-    analyzer = BadmintonVideoAnalyzer()
-    return analyzer.analyze_video(video_path)
+    analyzer = BadmintonVideoAnalyzer(frame_skip=frame_skip)
+    return analyzer.analyze_video(video_path, progress_callback=progress_callback)

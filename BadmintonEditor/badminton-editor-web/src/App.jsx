@@ -14,12 +14,15 @@ function App() {
   const [currentView, setCurrentView] = useState('upload') // upload, edit, export
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisError, setAnalysisError] = useState(null)
+  const [analysisProgress, setAnalysisProgress] = useState(0)
+  const [videoId, setVideoId] = useState(null)
 
   const handleVideoUpload = async (file) => {
     setVideoFile(file)
     const url = URL.createObjectURL(file)
     setVideoUrl(url)
     setAnalysisError(null)
+    setAnalysisProgress(0)
     
     // Show edit view immediately with loading state
     setCurrentView('edit')
@@ -41,6 +44,20 @@ function App() {
       
       const uploadData = await uploadResponse.json()
       const newVideoId = uploadData.video_id
+      setVideoId(newVideoId)
+      
+      // Start progress polling
+      const progressInterval = setInterval(async () => {
+        try {
+          const progressResponse = await fetch(`${API_BASE_URL}/api/progress/${newVideoId}`)
+          if (progressResponse.ok) {
+            const progressData = await progressResponse.json()
+            setAnalysisProgress(progressData.progress)
+          }
+        } catch (err) {
+          console.error('Error fetching progress:', err)
+        }
+      }, 1000) // Poll every second
       
       // Analyze video using AI
       const analyzeResponse = await fetch(`${API_BASE_URL}/api/analyze`, {
@@ -50,6 +67,10 @@ function App() {
         },
         body: JSON.stringify({ video_id: newVideoId })
       })
+      
+      // Stop progress polling
+      clearInterval(progressInterval)
+      setAnalysisProgress(100)
       
       if (!analyzeResponse.ok) {
         throw new Error('Failed to analyze video')
@@ -63,6 +84,7 @@ function App() {
       console.error('Error processing video:', error)
       setAnalysisError(error.message)
       setIsAnalyzing(false)
+      setAnalysisProgress(0)
       
       // Fallback to local demo segments if backend fails
       const video = document.createElement('video')
@@ -86,6 +108,16 @@ function App() {
           })
         }
         
+        setSegments(demoSegments)
+      }
+      video.onerror = () => {
+        console.error('Failed to load video metadata')
+        // Create default segments based on assumption
+        const demoSegments = [
+          { id: 1, start: 0, end: 30, type: 'serve', court: 1, confidence: 0.75 },
+          { id: 2, start: 30, end: 60, type: 'rally', court: 2, confidence: 0.75 },
+          { id: 3, start: 60, end: 90, type: 'score', court: 1, confidence: 0.75 }
+        ]
         setSegments(demoSegments)
       }
     }
@@ -143,6 +175,7 @@ function App() {
             onExport={() => setCurrentView('export')}
             isAnalyzing={isAnalyzing}
             analysisError={analysisError}
+            analysisProgress={analysisProgress}
           />
         )}
 

@@ -1,113 +1,134 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
-import uvicorn
+"""
+Flask-based Backend for Badminton Video Editor
+Alternative implementation for Windows compatibility
+"""
+
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import os
-import shutil
 import uuid
 import re
+import time
+import logging
 from pathlib import Path
 from video_analyzer import analyze_badminton_video
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(
-    title="Badminton Video Editor API",
-    description="AI-powered video analysis for badminton matches",
-    version="1.0.0"
-)
+app = Flask(__name__)
 
-# Enable CORS for frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Enable CORS
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:5173", "http://localhost:3000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
+
+# Configuration
+UPLOAD_FOLDER = Path('uploads')
+PROCESSED_FOLDER = Path('processed')
+ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi', 'webm'}
+MAX_CONTENT_LENGTH = 20 * 1024 * 1024 * 1024  # 20GB max file size
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Storage for uploaded videos and their analysis
-UPLOAD_DIR = Path("uploads")
-PROCESSED_DIR = Path("processed")
-video_storage = {}  # video_id -> {filename, path, analysis}
+video_storage = {}  # video_id -> {filename, path, analysis, progress}
 
-# Data models
-class VideoSegment(BaseModel):
-    id: int
-    start: float
-    end: float
-    type: str  # serve, rally, score
-    court: int
-    confidence: float = 0.0
 
-class AnalysisResult(BaseModel):
-    video_id: str
-    segments: List[VideoSegment]
-    total_duration: float
-    courts_detected: int
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-class ExportRequest(BaseModel):
-    video_id: str
-    segments: List[VideoSegment]
-    quality: str = "high"
-    format: str = "mp4"
 
-# API endpoints
-@app.get("/")
-async def root():
-    return {
-        "message": "Badminton Video Editor API",
+def sanitize_filename(filename):
+    """Sanitize filename to prevent security issues"""
+    # Keep only alphanumeric, dash, underscore, and dot
+    safe_name = re.sub(r'[^\w\-.]', '_', filename)
+    return secure_filename(safe_name)
+
+
+@app.route('/')
+def index():
+    """Root endpoint"""
+    return jsonify({
+        "message": "Badminton Video Editor API - Flask Edition",
         "status": "running",
-        "version": "1.0.0"
-    }
+        "version": "2.0.0",
+        "framework": "Flask"
+    })
 
-@app.post("/api/upload")
-async def upload_video(file: UploadFile = File(...)):
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({"status": "healthy"})
+
+
+@app.route('/api/upload', methods=['POST'])
+def upload_video():
     """
     Upload a video file for processing
     """
+    # Check if file is in request
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in request"}), 400
+    
+    file = request.files['file']
+    
+    # Check if file is selected
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+    
     # Validate file type
-    if not file.content_type.startswith('video/'):
-        raise HTTPException(status_code=400, detail="File must be a video")
+    if not allowed_file(file.filename):
+        return jsonify({
+            "error": "Invalid file type. Allowed: MP4, MOV, AVI, WebM"
+        }), 400
     
-    # Generate unique video ID and secure filename
-    import time
+    try:
+        # Generate unique video ID and secure filename
+        safe_filename = sanitize_filename(file.filename)
+        unique_id = str(uuid.uuid4())
+        video_id = f"video_{int(time.time())}_{unique_id[:8]}"
+        
+        # Use unique filename to prevent collisions
+        file_extension = Path(safe_filename).suffix
+        unique_filename = f"{video_id}{file_extension}"
+        
+        # Save file to uploads directory
+        file_path = UPLOAD_FOLDER / unique_filename
+        file.save(str(file_path))
+        
+        # Store video info
+        video_storage[video_id] = {
+            "filename": safe_filename,
+            "path": str(file_path),
+            "analysis": None,
+            "progress": 0
+        }
+        
+        logger.info(f"Video uploaded: {video_id} -> {file_path}")
+        
+        return jsonify({
+            "video_id": video_id,
+            "filename": safe_filename,
+            "status": "uploaded",
+            "message": "Video uploaded successfully. Ready for analysis."
+        }), 200
     
-    # Sanitize filename - keep only alphanumeric, dash, underscore, and dot
-    safe_filename = re.sub(r'[^\w\-.]', '_', file.filename)
-    unique_id = str(uuid.uuid4())
-    video_id = f"video_{int(time.time())}_{unique_id[:8]}"
-    
-    # Use unique filename to prevent collisions
-    file_extension = Path(safe_filename).suffix
-    unique_filename = f"{video_id}{file_extension}"
-    
-    # Save file to uploads directory
-    file_path = UPLOAD_DIR / unique_filename
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    # Store video info
-    video_storage[video_id] = {
-        "filename": safe_filename,
-        "path": str(file_path),
-        "analysis": None
-    }
-    
-    logger.info(f"Video uploaded: {video_id} -> {file_path}")
-    
-    return {
-        "video_id": video_id,
-        "filename": safe_filename,
-        "status": "uploaded",
-        "message": "Video uploaded successfully. Ready for analysis."
-    }
+    except Exception as e:
+        logger.error(f"Error uploading video: {str(e)}")
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
-@app.post("/api/analyze", response_model=AnalysisResult)
-async def analyze_video(video_id: str):
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_video():
     """
     Analyze video and detect key moments using AI
     
@@ -117,10 +138,16 @@ async def analyze_video(video_id: str):
     3. Scores (pauses in action)
     4. Court boundaries
     """
+    data = request.get_json()
+    
+    if not data or 'video_id' not in data:
+        return jsonify({"error": "video_id is required"}), 400
+    
+    video_id = data['video_id']
     
     # Check if video exists
     if video_id not in video_storage:
-        raise HTTPException(status_code=404, detail="Video not found")
+        return jsonify({"error": "Video not found"}), 404
     
     video_info = video_storage[video_id]
     video_path = video_info["path"]
@@ -128,62 +155,76 @@ async def analyze_video(video_id: str):
     # Check if already analyzed
     if video_info["analysis"]:
         logger.info(f"Returning cached analysis for {video_id}")
-        return AnalysisResult(**video_info["analysis"])
+        return jsonify(video_info["analysis"]), 200
     
     logger.info(f"Starting AI analysis for {video_id}")
     
     try:
-        # Perform actual video analysis
-        analysis_result = analyze_badminton_video(video_path)
+        # Progress callback to update status
+        def progress_callback(current, total):
+            if total > 0:
+                progress = int((current / total) * 100)
+                video_info["progress"] = progress
+                logger.info(f"Analysis progress for {video_id}: {progress}% ({current}/{total} frames)")
         
-        # Convert to API format
-        segments = [
-            VideoSegment(
-                id=seg['id'],
-                start=seg['start'],
-                end=seg['end'],
-                type=seg['type'],
-                court=seg['court'],
-                confidence=seg['confidence']
-            )
-            for seg in analysis_result['segments']
-        ]
+        # Perform actual video analysis with progress tracking
+        analysis_result = analyze_badminton_video(video_path, progress_callback=progress_callback)
         
-        result = AnalysisResult(
-            video_id=video_id,
-            segments=segments,
-            total_duration=analysis_result['total_duration'],
-            courts_detected=analysis_result['courts_detected']
-        )
+        # Format response
+        result = {
+            "video_id": video_id,
+            "segments": analysis_result['segments'],
+            "total_duration": analysis_result['total_duration'],
+            "courts_detected": analysis_result['courts_detected'],
+            "total_frames": analysis_result.get('total_frames', 0),
+            "fps": analysis_result.get('fps', 0)
+        }
         
         # Cache the analysis
-        video_info["analysis"] = result.dict()
+        video_info["analysis"] = result
+        video_info["progress"] = 100
         
-        logger.info(f"Analysis complete for {video_id}: {len(segments)} segments detected")
+        logger.info(f"Analysis complete for {video_id}: {len(result['segments'])} segments detected")
         
-        return result
+        return jsonify(result), 200
         
     except Exception as e:
         logger.error(f"Error analyzing video {video_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error analyzing video: {str(e)}")
+        return jsonify({"error": f"Error analyzing video: {str(e)}"}), 500
 
-@app.get("/api/segments/{video_id}", response_model=List[VideoSegment])
-async def get_segments(video_id: str):
+
+@app.route('/api/segments/<video_id>', methods=['GET'])
+def get_segments(video_id):
     """
     Get detected segments for a video
     """
     if video_id not in video_storage:
-        raise HTTPException(status_code=404, detail="Video not found")
+        return jsonify({"error": "Video not found"}), 404
     
     video_info = video_storage[video_id]
     
     if not video_info["analysis"]:
-        raise HTTPException(status_code=400, detail="Video not analyzed yet. Call /api/analyze first")
+        return jsonify({
+            "error": "Video not analyzed yet. Call /api/analyze first"
+        }), 400
     
-    return video_info["analysis"]["segments"]
+    return jsonify(video_info["analysis"]["segments"]), 200
 
-@app.post("/api/export")
-async def export_video(request: ExportRequest):
+
+@app.route('/api/progress/<video_id>', methods=['GET'])
+def get_progress(video_id):
+    """
+    Get analysis progress for a video
+    """
+    if video_id not in video_storage:
+        return jsonify({"error": "Video not found"}), 404
+    
+    progress = video_storage[video_id].get("progress", 0)
+    return jsonify({"video_id": video_id, "progress": progress}), 200
+
+
+@app.route('/api/export', methods=['POST'])
+def export_video():
     """
     Export processed video with selected segments
     
@@ -194,38 +235,70 @@ async def export_video(request: ExportRequest):
     4. Encode with specified quality and format
     5. Return download URL
     """
+    data = request.get_json()
     
-    return {
+    if not data or 'video_id' not in data:
+        return jsonify({"error": "video_id is required"}), 400
+    
+    video_id = data['video_id']
+    segments = data.get('segments', [])
+    quality = data.get('quality', 'high')
+    format_type = data.get('format', 'mp4')
+    
+    return jsonify({
         "status": "processing",
-        "video_id": request.video_id,
-        "segments_count": len(request.segments),
-        "quality": request.quality,
-        "format": request.format,
+        "video_id": video_id,
+        "segments_count": len(segments),
+        "quality": quality,
+        "format": format_type,
         "estimated_time": "30 seconds",
         "message": "Export started. Video will be ready shortly."
-    }
+    }), 200
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy"}
 
-if __name__ == "__main__":
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    """Handle file too large error"""
+    return jsonify({
+        "error": "File too large. Maximum size is 20GB"
+    }), 413
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    """Handle internal server errors"""
+    logger.error(f"Internal server error: {error}")
+    return jsonify({
+        "error": "Internal server error",
+        "message": str(error)
+    }), 500
+
+
+if __name__ == '__main__':
     # Create required directories
-    UPLOAD_DIR.mkdir(exist_ok=True)
-    PROCESSED_DIR.mkdir(exist_ok=True)
+    UPLOAD_FOLDER.mkdir(exist_ok=True)
+    PROCESSED_FOLDER.mkdir(exist_ok=True)
     
     print("""
-    🏸 Badminton Video Editor API Server - AI ENABLED
-    =================================================
+    🏸 Badminton Video Editor API Server - Flask Edition - AI ENABLED
+    ==================================================================
     Server starting on http://localhost:8000
-    API Documentation: http://localhost:8000/docs
     
     Features:
     - Real-time video analysis using OpenCV
     - Motion-based serve/rally/score detection
     - Multi-court support
+    - Windows-compatible Flask backend
+    
+    Press Ctrl+C to stop the server
     """)
     
-    # Use import string for reload support
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Run Flask server
+    # Note: debug=False and use_reloader=False for Windows compatibility
+    app.run(
+        host='0.0.0.0',
+        port=8000,
+        debug=False,
+        use_reloader=False,
+        threaded=True
+    )
