@@ -38,7 +38,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Storage for uploaded videos and their analysis
-video_storage = {}  # video_id -> {filename, path, analysis, progress}
+video_storage = {}  # video_id -> {filename, path, analysis, progress, upload_progress}
 
 
 def allowed_file(filename):

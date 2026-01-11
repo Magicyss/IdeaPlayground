@@ -325,6 +325,10 @@
   transition: width 0.3s ease;
 }
 
+.progress-fill.upload {
+  background: linear-gradient(90deg, #48c774, #3298dc);
+}
+
 @media (max-width: 768px) {
   .video-player-section {
     grid-template-columns: 1fr;

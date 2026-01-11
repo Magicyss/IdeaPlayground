@@ -15,6 +15,7 @@ function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisError, setAnalysisError] = useState(null)
   const [analysisProgress, setAnalysisProgress] = useState(0)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [videoId, setVideoId] = useState(null)
 
   const handleVideoUpload = async (file) => {
@@ -85,6 +86,7 @@ function App() {
       setAnalysisError(error.message)
       setIsAnalyzing(false)
       setAnalysisProgress(0)
+      setUploadProgress(0)
       
       // Fallback to local demo segments if backend fails
       const video = document.createElement('video')
@@ -176,6 +178,7 @@ function App() {
             isAnalyzing={isAnalyzing}
             analysisError={analysisError}
             analysisProgress={analysisProgress}
+            uploadProgress={uploadProgress}
           />
         )}
 
