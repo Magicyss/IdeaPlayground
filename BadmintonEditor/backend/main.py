@@ -78,7 +78,28 @@ def index():
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({"status": "healthy"})
+    local_mode_enabled = os.environ.get('LOCAL_MODE', 'false').lower() == 'true'
+    gpu_enabled = os.environ.get('GPU_ENABLED', 'false').lower() == 'true'
+    
+    return jsonify({
+        "status": "healthy",
+        "local_mode": local_mode_enabled,
+        "gpu_enabled": gpu_enabled and USE_GPU,
+        "framework": "Flask"
+    })
+
+
+@app.route('/api/routes', methods=['GET'])
+def list_routes():
+    """List all available API routes (debug endpoint)"""
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            "endpoint": rule.endpoint,
+            "methods": list(rule.methods),
+            "path": str(rule)
+        })
+    return jsonify({"routes": routes})
 
 
 @app.route('/api/upload', methods=['POST'])
@@ -249,7 +270,7 @@ def get_progress(video_id):
     return jsonify({"video_id": video_id, "progress": progress}), 200
 
 
-@app.route('/api/analyze-local', methods=['POST'])
+@app.route('/api/analyze-local', methods=['POST', 'OPTIONS'])
 def analyze_local_video():
     """
     Analyze a video from local file path (development mode only)
@@ -257,8 +278,18 @@ def analyze_local_video():
     
     Requires LOCAL_MODE=true environment variable
     """
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        logger.info("OPTIONS request received for /api/analyze-local")
+        return jsonify({"status": "ok"}), 200
+    
+    logger.info(f"POST request received for /api/analyze-local")
+    
     # Check if local mode is enabled
     local_mode = os.environ.get('LOCAL_MODE', 'false').lower() == 'true'
+    logger.info(f"LOCAL_MODE environment variable: {os.environ.get('LOCAL_MODE', 'not set')}")
+    logger.info(f"Local mode enabled: {local_mode}")
+    
     if not local_mode:
         return jsonify({
             "error": "Local mode not enabled. Set LOCAL_MODE=true environment variable."
@@ -266,9 +297,11 @@ def analyze_local_video():
     
     data = request.get_json()
     if not data or 'video_path' not in data:
+        logger.error("No video_path in request data")
         return jsonify({"error": "No video_path provided"}), 400
     
     video_path = data['video_path']
+    logger.info(f"Analyzing local video: {video_path}")
     
     try:
         # Validate and sanitize path
