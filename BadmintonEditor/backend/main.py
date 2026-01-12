@@ -13,6 +13,10 @@ import time
 import logging
 from pathlib import Path
 
+# Setup logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Try GPU-accelerated analyzer first, fall back to CPU
 try:
     from video_analyzer_gpu import analyze_badminton_video_gpu
@@ -23,9 +27,6 @@ except ImportError:
     USE_GPU = False
 
 from video_analyzer import analyze_badminton_video
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
