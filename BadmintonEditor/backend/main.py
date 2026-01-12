@@ -12,6 +12,16 @@ import re
 import time
 import logging
 from pathlib import Path
+
+# Try GPU-accelerated analyzer first, fall back to CPU
+try:
+    from video_analyzer_gpu import analyze_badminton_video_gpu
+    USE_GPU = os.environ.get('GPU_ENABLED', 'true').lower() == 'true'
+    logger.info(f"GPU module loaded. GPU_ENABLED={USE_GPU}")
+except ImportError:
+    logger.warning("GPU module not available, using CPU-only analyzer")
+    USE_GPU = False
+
 from video_analyzer import analyze_badminton_video
 
 logging.basicConfig(level=logging.INFO)
@@ -167,8 +177,21 @@ def analyze_video():
                 video_info["progress"] = progress
                 logger.info(f"Analysis progress for {video_id}: {progress}% ({current}/{total} frames)")
         
-        # Perform actual video analysis with progress tracking
-        analysis_result = analyze_badminton_video(video_path, progress_callback=progress_callback)
+        # Use GPU-accelerated analyzer if available
+        if USE_GPU:
+            try:
+                logger.info(f"🚀 Using GPU-accelerated analyzer for {video_id}")
+                analysis_result = analyze_badminton_video_gpu(
+                    video_path, 
+                    progress_callback=progress_callback,
+                    use_gpu=True
+                )
+            except Exception as gpu_error:
+                logger.warning(f"GPU analysis failed, falling back to CPU: {gpu_error}")
+                analysis_result = analyze_badminton_video(video_path, progress_callback=progress_callback)
+        else:
+            logger.info(f"Using CPU analyzer for {video_id}")
+            analysis_result = analyze_badminton_video(video_path, progress_callback=progress_callback)
         
         # Format response
         result = {
@@ -177,14 +200,16 @@ def analyze_video():
             "total_duration": analysis_result['total_duration'],
             "courts_detected": analysis_result['courts_detected'],
             "total_frames": analysis_result.get('total_frames', 0),
-            "fps": analysis_result.get('fps', 0)
+            "fps": analysis_result.get('fps', 0),
+            "gpu_accelerated": analysis_result.get('gpu_accelerated', False)
         }
         
         # Cache the analysis
         video_info["analysis"] = result
         video_info["progress"] = 100
         
-        logger.info(f"Analysis complete for {video_id}: {len(result['segments'])} segments detected")
+        mode = "GPU" if result.get('gpu_accelerated') else "CPU"
+        logger.info(f"✅ Analysis complete for {video_id} ({mode}): {len(result['segments'])} segments detected")
         
         return jsonify(result), 200
         

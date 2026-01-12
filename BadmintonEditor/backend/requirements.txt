@@ -1,7 +1,13 @@
 # Flask-based Backend Requirements (Windows Compatible)
 Flask==3.0.0
 Flask-CORS==4.0.0
+
+# OpenCV with GPU support (optional - falls back to CPU if CUDA not available)
+# For GPU acceleration: Install CUDA toolkit first, then opencv-contrib-python
+# For CPU only: opencv-python is sufficient
 opencv-python==4.8.1.78
+# opencv-contrib-python==4.8.1.78  # Uncomment for CUDA GPU support
+
 numpy<2.0.0
 Werkzeug==3.0.1
 ffmpeg-python==0.2.0
@@ -10,3 +16,9 @@ ffmpeg-python==0.2.0
 # torch==2.5.1
 # ultralytics==8.3.48
 # mediapipe==0.10.20
+
+# GPU Acceleration Notes:
+# 1. Check GPU availability: nvidia-smi
+# 2. Check CUDA support: python -c "import cv2; print(cv2.cuda.getCudaEnabledDeviceCount())"
+# 3. If GPU detected: export GPU_ENABLED=true (default)
+# 4. To force CPU: export GPU_ENABLED=false
