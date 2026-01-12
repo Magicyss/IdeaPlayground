@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import './VideoUploader.css'
 
-function VideoUploader({ onVideoUpload }) {
+function VideoUploader({ onVideoUpload, onLocalPath }) {
   const [dragActive, setDragActive] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
+  const [localPath, setLocalPath] = useState('')
+  
+  // Check if local mode is enabled
+  const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true'
 
   const handleDrag = (e) => {
     e.preventDefault()
@@ -48,6 +52,14 @@ function VideoUploader({ onVideoUpload }) {
       onVideoUpload(selectedFile)
     }
   }
+  
+  const handleLocalAnalyze = () => {
+    if (localPath.trim()) {
+      onLocalPath(localPath)
+    } else {
+      alert('Please enter a valid file path')
+    }
+  }
 
   return (
     <div className="video-uploader">
@@ -59,48 +71,85 @@ function VideoUploader({ onVideoUpload }) {
         <p className="upload-description" style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
           Upload your badminton match video. AI will automatically analyze and detect serves, scores, and key moments using OpenCV.
         </p>
+        
+        {isLocalMode && (
+          <div className="local-mode-banner">
+            <span className="local-mode-icon">🔧</span>
+            <strong>Local Development Mode</strong> - Enter file path instead of uploading
+          </div>
+        )}
 
-        <div
-          className={`drop-zone ${dragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''}`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <input
-            type="file"
-            id="video-input"
-            className="file-input"
-            accept="video/*"
-            onChange={handleChange}
-          />
-          
-          {!selectedFile ? (
-            <>
-              <div className="upload-icon">📹</div>
-              <label htmlFor="video-input" className="upload-label">
-                <strong>Choose a video</strong> or drag it here
-              </label>
-              <p className="file-types">Supported: MP4, MOV, AVI, WebM</p>
-            </>
-          ) : (
-            <>
-              <div className="file-info">
-                <div className="success-icon">✓</div>
-                <h3>{selectedFile.name}</h3>
-                <p>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                <button className="change-file-btn" onClick={() => setSelectedFile(null)}>
-                  Change File
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        {isLocalMode ? (
+          // Local mode: File path input
+          <div className="local-path-input-container">
+            <label htmlFor="local-path" className="local-path-label">
+              Enter Local Video File Path:
+            </label>
+            <input
+              type="text"
+              id="local-path"
+              className="local-path-input"
+              placeholder="C:\Videos\badminton\match.mp4"
+              value={localPath}
+              onChange={(e) => setLocalPath(e.target.value)}
+            />
+            <p className="local-path-hint">
+              Example: <code>C:\Videos\match.mp4</code> or <code>/home/user/videos/match.mp4</code>
+            </p>
+            <button 
+              className="upload-btn" 
+              onClick={handleLocalAnalyze}
+              disabled={!localPath.trim()}
+            >
+              Analyze Local File
+            </button>
+          </div>
+        ) : (
+          // Upload mode: Drag & drop interface
+          <>
+            <div
+              className={`drop-zone ${dragActive ? 'drag-active' : ''} ${selectedFile ? 'file-selected' : ''}`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                id="video-input"
+                className="file-input"
+                accept="video/*"
+                onChange={handleChange}
+              />
+              
+              {!selectedFile ? (
+                <>
+                  <div className="upload-icon">📹</div>
+                  <label htmlFor="video-input" className="upload-label">
+                    <strong>Choose a video</strong> or drag it here
+                  </label>
+                  <p className="file-types">Supported: MP4, MOV, AVI, WebM</p>
+                </>
+              ) : (
+                <>
+                  <div className="file-info">
+                    <div className="success-icon">✓</div>
+                    <h3>{selectedFile.name}</h3>
+                    <p>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    <button className="change-file-btn" onClick={() => setSelectedFile(null)}>
+                      Change File
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
-        {selectedFile && (
-          <button className="upload-btn" onClick={handleUpload}>
-            Start Processing
-          </button>
+            {selectedFile && (
+              <button className="upload-btn" onClick={handleUpload}>
+                Start Processing
+              </button>
+            )}
+          </>
         )}
 
         <div className="features">

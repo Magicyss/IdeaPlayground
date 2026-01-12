@@ -17,6 +17,50 @@ function App() {
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [videoId, setVideoId] = useState(null)
+  
+  // Check if local mode is enabled
+  const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true'
+  
+  const handleLocalPath = async (filePath) => {
+    setAnalysisError(null)
+    setAnalysisProgress(0)
+    
+    // Show edit view immediately with loading state
+    setCurrentView('edit')
+    setIsAnalyzing(true)
+    
+    try {
+      // Analyze video directly from local path
+      const analyzeResponse = await fetch(`${API_BASE_URL}/api/analyze-local`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ video_path: filePath })
+      })
+      
+      if (!analyzeResponse.ok) {
+        const errorData = await analyzeResponse.json()
+        throw new Error(errorData.error || 'Failed to analyze video')
+      }
+      
+      const analysisData = await analyzeResponse.json()
+      setSegments(analysisData.segments)
+      setVideoId(analysisData.video_id)
+      setAnalysisProgress(100)
+      setIsAnalyzing(false)
+      
+      // Set video URL to local path (for display purposes)
+      setVideoUrl(`file:///${filePath}`)
+      
+    } catch (error) {
+      console.error('Error processing local video:', error)
+      setAnalysisError(error.message)
+      setIsAnalyzing(false)
+      setAnalysisProgress(0)
+      setCurrentView('upload')
+    }
+  }
 
   const handleVideoUpload = async (file) => {
     setVideoFile(file)
@@ -166,7 +210,10 @@ function App() {
 
       <main className="app-content">
         {currentView === 'upload' && (
-          <VideoUploader onVideoUpload={handleVideoUpload} />
+          <VideoUploader 
+            onVideoUpload={handleVideoUpload}
+            onLocalPath={handleLocalPath}
+          />
         )}
 
         {currentView === 'edit' && videoUrl && (

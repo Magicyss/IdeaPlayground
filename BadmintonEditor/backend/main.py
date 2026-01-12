@@ -249,6 +249,107 @@ def get_progress(video_id):
     return jsonify({"video_id": video_id, "progress": progress}), 200
 
 
+@app.route('/api/analyze-local', methods=['POST'])
+def analyze_local_video():
+    """
+    Analyze a video from local file path (development mode only)
+    Skips upload step - directly analyzes file from filesystem
+    
+    Requires LOCAL_MODE=true environment variable
+    """
+    # Check if local mode is enabled
+    local_mode = os.environ.get('LOCAL_MODE', 'false').lower() == 'true'
+    if not local_mode:
+        return jsonify({
+            "error": "Local mode not enabled. Set LOCAL_MODE=true environment variable."
+        }), 403
+    
+    data = request.get_json()
+    if not data or 'video_path' not in data:
+        return jsonify({"error": "No video_path provided"}), 400
+    
+    video_path = data['video_path']
+    
+    try:
+        # Validate and sanitize path
+        file_path = Path(video_path)
+        
+        # Security check: file must exist and be a file
+        if not file_path.exists():
+            return jsonify({"error": f"File not found: {video_path}"}), 404
+        
+        if not file_path.is_file():
+            return jsonify({"error": "Path is not a file"}), 400
+        
+        # Check file extension
+        if file_path.suffix.lower() not in ['.mp4', '.mov', '.avi', '.webm']:
+            return jsonify({
+                "error": "Invalid file type. Allowed: MP4, MOV, AVI, WebM"
+            }), 400
+        
+        # Generate unique video ID
+        unique_id = str(uuid.uuid4())
+        video_id = f"local_{int(time.time())}_{unique_id[:8]}"
+        
+        # Store video info (path only, no upload)
+        video_storage[video_id] = {
+            "filename": file_path.name,
+            "path": str(file_path),
+            "analysis": None,
+            "progress": 0,
+            "local_mode": True
+        }
+        
+        logger.info(f"Local video registered: {video_id} -> {file_path}")
+        
+        # Immediately analyze the video
+        video_info = video_storage[video_id]
+        video_file_path = Path(video_info["path"])
+        
+        # Progress callback
+        def update_progress(progress):
+            video_info["progress"] = progress
+        
+        # Run analysis
+        if USE_GPU:
+            logger.info(f"Analyzing {video_id} with GPU acceleration (local mode)")
+            analysis_result = analyze_badminton_video_gpu(
+                str(video_file_path),
+                progress_callback=update_progress
+            )
+        else:
+            logger.info(f"Analyzing {video_id} with CPU (local mode)")
+            analysis_result = analyze_badminton_video(
+                str(video_file_path),
+                progress_callback=update_progress
+            )
+        
+        result = {
+            "video_id": video_id,
+            "filename": video_info["filename"],
+            "segments": analysis_result['segments'],
+            "total_duration": analysis_result['total_duration'],
+            "courts_detected": analysis_result['courts_detected'],
+            "total_frames": analysis_result.get('total_frames', 0),
+            "fps": analysis_result.get('fps', 0),
+            "gpu_accelerated": analysis_result.get('gpu_accelerated', False),
+            "local_mode": True
+        }
+        
+        # Cache the analysis
+        video_info["analysis"] = result
+        video_info["progress"] = 100
+        
+        mode = "GPU" if result.get('gpu_accelerated') else "CPU"
+        logger.info(f"✅ Local analysis complete for {video_id} ({mode}): {len(result['segments'])} segments")
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        logger.error(f"Error analyzing local video: {str(e)}")
+        return jsonify({"error": f"Error analyzing local video: {str(e)}"}), 500
+
+
 @app.route('/api/export', methods=['POST'])
 def export_video():
     """
