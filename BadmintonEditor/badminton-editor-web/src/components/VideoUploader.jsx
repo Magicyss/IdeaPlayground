@@ -5,6 +5,7 @@ function VideoUploader({ onVideoUpload, onLocalPath }) {
   const [dragActive, setDragActive] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
   const [localPath, setLocalPath] = useState('')
+  const [localFile, setLocalFile] = useState(null)
   
   // Check if local mode is enabled
   const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true'
@@ -54,11 +55,30 @@ function VideoUploader({ onVideoUpload, onLocalPath }) {
   }
   
   const handleLocalAnalyze = () => {
-    if (localPath.trim()) {
-      onLocalPath(localPath)
+    // If we have a file object from the browser, pass it
+    // Otherwise pass the path string
+    const pathOrFile = localFile || localPath.trim()
+    
+    if (pathOrFile) {
+      onLocalPath(pathOrFile)
     } else {
-      alert('Please enter a valid file path')
+      alert('Please select a file or enter a valid file path')
     }
+  }
+  
+  const handleLocalFileSelect = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setLocalFile(file)
+      // Get the full file path (webkitRelativePath gives us path info)
+      // Note: For security reasons, browsers don't expose the full local path
+      // So we'll use the file name and the File API
+      setLocalPath(file.name)
+    }
+  }
+  
+  const handleBrowse = () => {
+    document.getElementById('local-file-input').click()
   }
 
   return (
@@ -80,22 +100,65 @@ function VideoUploader({ onVideoUpload, onLocalPath }) {
         )}
 
         {isLocalMode ? (
-          // Local mode: File path input
+          // Local mode: File browser interface (like upload mode but sends path)
           <div className="local-path-input-container">
-            <label htmlFor="local-path" className="local-path-label">
-              Enter Local Video File Path:
-            </label>
+            <div className="local-mode-description">
+              <p><strong>Local Development Mode:</strong> Browse for a file on your computer. The file path will be sent to the backend for direct access (no upload needed).</p>
+            </div>
+            
             <input
-              type="text"
-              id="local-path"
-              className="local-path-input"
-              placeholder="C:\Videos\badminton\match.mp4"
-              value={localPath}
-              onChange={(e) => setLocalPath(e.target.value)}
+              type="file"
+              id="local-file-input"
+              style={{ display: 'none' }}
+              accept="video/*"
+              onChange={handleLocalFileSelect}
             />
-            <p className="local-path-hint">
-              Example: <code>C:\Videos\match.mp4</code> or <code>/home/user/videos/match.mp4</code>
-            </p>
+            
+            <div className={`drop-zone ${localFile ? 'file-selected' : ''}`}>
+              {!localFile ? (
+                <>
+                  <div className="upload-icon">📁</div>
+                  <button 
+                    type="button"
+                    className="browse-btn"
+                    onClick={handleBrowse}
+                  >
+                    Browse for Local Video File
+                  </button>
+                  <p className="file-types">Supported: MP4, MOV, AVI, WebM</p>
+                </>
+              ) : (
+                <>
+                  <div className="file-info">
+                    <div className="success-icon">✓</div>
+                    <h3>{localFile.name}</h3>
+                    <p>{(localFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    <button className="change-file-btn" onClick={() => {
+                      setLocalFile(null)
+                      setLocalPath('')
+                    }}>
+                      Change File
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="local-path-display">
+              <label>File Selected:</label>
+              <input
+                type="text"
+                className="local-path-input"
+                placeholder="No file selected"
+                value={localPath}
+                onChange={(e) => setLocalPath(e.target.value)}
+                readOnly
+              />
+              <p className="local-path-hint">
+                💡 <strong>Note:</strong> The actual file path will be sent to the backend. Make sure the backend has access to this file location.
+              </p>
+            </div>
+            
             <button 
               className="upload-btn" 
               onClick={handleLocalAnalyze}

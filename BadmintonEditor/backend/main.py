@@ -13,8 +13,12 @@ import time
 import logging
 from pathlib import Path
 
-# Setup logging first
-logging.basicConfig(level=logging.INFO)
+# Setup logging with timestamps
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
 # Try GPU-accelerated analyzer first, fall back to CPU

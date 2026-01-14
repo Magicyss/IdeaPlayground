@@ -200,18 +200,54 @@
 }
 
 .local-path-input-container {
-  background: #f8f9fa;
-  padding: 2rem;
-  border-radius: 12px;
   margin-bottom: 2rem;
 }
 
-.local-path-label {
+.local-mode-description {
+  background: #e8eaff;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #667eea;
+}
+
+.local-mode-description p {
+  margin: 0;
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+.browse-btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin: 1rem 0;
+}
+
+.browse-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.local-path-display {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.local-path-display label {
   display: block;
   color: #2c3e50;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .local-path-input {
@@ -223,6 +259,7 @@
   margin-bottom: 0.5rem;
   font-family: 'Courier New', monospace;
   transition: border-color 0.3s;
+  background: white;
 }
 
 .local-path-input:focus {
@@ -230,10 +267,20 @@
   border-color: #667eea;
 }
 
+.local-path-input[readonly] {
+  background: #ecf0f1;
+  cursor: default;
+}
+
 .local-path-hint {
   color: #7f8c8d;
   font-size: 0.9rem;
-  margin: 0.5rem 0 1.5rem 0;
+  margin: 0.5rem 0 0 0;
+  line-height: 1.5;
+}
+
+.local-path-hint strong {
+  color: #2c3e50;
 }
 
 .local-path-hint code {
