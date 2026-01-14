@@ -383,8 +383,14 @@ def analyze_local_video():
         return jsonify(result), 200
         
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         logger.error(f"Error analyzing local video: {str(e)}")
-        return jsonify({"error": f"Error analyzing local video: {str(e)}"}), 500
+        logger.error(f"Full traceback:\n{error_details}")
+        return jsonify({
+            "error": f"Error analyzing local video: {str(e)}",
+            "details": error_details if local_mode else "Enable LOCAL_MODE for detailed errors"
+        }), 500
 
 
 @app.route('/api/export', methods=['POST'])
