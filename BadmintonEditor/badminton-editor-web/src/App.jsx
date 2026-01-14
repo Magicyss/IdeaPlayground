@@ -21,7 +21,7 @@ function App() {
   // Check if local mode is enabled
   const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true'
   
-  const handleLocalPath = async (filePathOrFile) => {
+  const handleLocalPath = async (filePath) => {
     setAnalysisError(null)
     setAnalysisProgress(0)
     
@@ -30,22 +30,8 @@ function App() {
     setIsAnalyzing(true)
     
     try {
-      let filePath = filePathOrFile
-      let fileToUse = null
-      
-      // If it's a File object (from file browser), extract path or use file directly
-      if (filePathOrFile instanceof File) {
-        fileToUse = filePathOrFile
-        // Try to get full path (webkitRelativePath or path property)
-        // Note: browsers don't expose full path for security reasons
-        // We'll send the file name and the File object
-        filePath = filePathOrFile.webkitRelativePath || filePathOrFile.name
-        
-        // Create object URL for video preview
-        const url = URL.createObjectURL(fileToUse)
-        setVideoUrl(url)
-        setVideoFile(fileToUse)
-      }
+      // Extract file name from path
+      const fileName = filePath.split(/[/\\]/).pop()
       
       // Analyze video directly from local path
       const analyzeResponse = await fetch(`${API_BASE_URL}/api/analyze-local`, {
@@ -55,7 +41,7 @@ function App() {
         },
         body: JSON.stringify({ 
           video_path: filePath,
-          file_name: fileToUse ? fileToUse.name : filePath.split(/[/\\]/).pop()
+          file_name: fileName
         })
       })
       
@@ -70,10 +56,8 @@ function App() {
       setAnalysisProgress(100)
       setIsAnalyzing(false)
       
-      // If we don't have a file object, set video URL to local path (for display purposes)
-      if (!fileToUse) {
-        setVideoUrl(`file:///${filePath}`)
-      }
+      // Set video URL to local path (for display purposes)
+      setVideoUrl(`file:///${filePath}`)
       
     } catch (error) {
       console.error('Error processing local video:', error)

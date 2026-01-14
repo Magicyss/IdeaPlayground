@@ -55,14 +55,12 @@ function VideoUploader({ onVideoUpload, onLocalPath }) {
   }
   
   const handleLocalAnalyze = () => {
-    // If we have a file object from the browser, pass it
-    // Otherwise pass the path string
-    const pathOrFile = localFile || localPath.trim()
+    const path = localPath.trim()
     
-    if (pathOrFile) {
-      onLocalPath(pathOrFile)
+    if (path) {
+      onLocalPath(path)
     } else {
-      alert('Please select a file or enter a valid file path')
+      alert('Please enter the full file path (e.g., C:\\Videos\\match.mp4)')
     }
   }
   
@@ -70,10 +68,16 @@ function VideoUploader({ onVideoUpload, onLocalPath }) {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
       setLocalFile(file)
-      // Get the full file path (webkitRelativePath gives us path info)
-      // Note: For security reasons, browsers don't expose the full local path
-      // So we'll use the file name and the File API
-      setLocalPath(file.name)
+      
+      // IMPORTANT: Browsers don't expose the full file path for security reasons
+      // User needs to manually paste the full path
+      alert(
+        `File found: ${file.name}\n\n` +
+        `⚠️ IMPORTANT: Browsers don't provide the full file path.\n\n` +
+        `Please MANUALLY PASTE the full file path in the text field below.\n\n` +
+        `Windows: C:\\Users\\YourName\\Videos\\${file.name}\n` +
+        `Mac/Linux: /home/username/Videos/${file.name}`
+      )
     }
   }
   
@@ -95,7 +99,12 @@ function VideoUploader({ onVideoUpload, onLocalPath }) {
         {isLocalMode && (
           <div className="local-mode-banner">
             <span className="local-mode-icon">🔧</span>
-            <strong>Local Development Mode</strong> - Enter file path instead of uploading
+            <div>
+              <strong>Local Development Mode</strong>
+              <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.85rem' }}>
+                Enter the full file path from your local machine (no upload required)
+              </p>
+            </div>
           </div>
         )}
 
@@ -145,17 +154,20 @@ function VideoUploader({ onVideoUpload, onLocalPath }) {
             </div>
             
             <div className="local-path-display">
-              <label>File Selected:</label>
+              <label>Full File Path (Required):</label>
               <input
                 type="text"
                 className="local-path-input"
-                placeholder="No file selected"
+                placeholder="Enter full path: C:\Videos\match.mp4 or /home/user/Videos/match.mp4"
                 value={localPath}
                 onChange={(e) => setLocalPath(e.target.value)}
-                readOnly
               />
               <p className="local-path-hint">
-                💡 <strong>Note:</strong> The actual file path will be sent to the backend. Make sure the backend has access to this file location.
+                💡 <strong>Important:</strong> Manually paste the FULL file path including drive letter/folder.
+                <br/>
+                Windows example: <code>C:\Users\YourName\Videos\badminton.mp4</code>
+                <br/>
+                Mac/Linux example: <code>/home/username/Videos/badminton.mp4</code>
               </p>
             </div>
             
