@@ -1,0 +1,52 @@
+.language-switcher {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+}
+
+.language-select {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+}
+
+.language-select:hover {
+  border-color: var(--primary-color);
+}
+
+.language-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+/* Make sure it works on dark backgrounds (like workout player) */
+.workout-player .language-switcher .language-select {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #333;
+}
+
+.workout-player .language-switcher .language-select:hover {
+  border-color: var(--primary-color);
+  background: white;
+}
+
+@media (max-width: 768px) {
+  .language-switcher {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+  
+  .language-select {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+}

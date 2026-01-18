@@ -1,0 +1,117 @@
+.rest-timer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+}
+
+.rest-content {
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+.rest-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.rest-title {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  font-weight: 600;
+}
+
+.countdown-display {
+  font-size: 6rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: white;
+  border-radius: 6px;
+  transition: width 1s linear;
+}
+
+.rest-info {
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+}
+
+.rest-info p {
+  margin: 0.5rem 0;
+  opacity: 0.9;
+}
+
+.next-exercise {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.next-exercise h3 {
+  margin: 0.5rem 0 0 0;
+  font-size: 1.5rem;
+}
+
+.skip-rest-button {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.skip-rest-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .rest-title {
+    font-size: 1.5rem;
+  }
+  
+  .countdown-display {
+    font-size: 4rem;
+  }
+  
+  .rest-icon {
+    font-size: 3rem;
+  }
+  
+  .next-exercise h3 {
+    font-size: 1.2rem;
+  }
+}
