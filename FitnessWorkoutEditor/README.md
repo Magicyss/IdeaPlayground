@@ -183,7 +183,7 @@ Workout plans are stored in JSON format:
 
 This application can be deployed to any static hosting service:
 
-- **GitHub Pages**
+- **GitHub Pages** - [查看详细部署教程](./DEPLOY-GITHUB-PAGES.md) / [View deployment guide](./DEPLOY-GITHUB-PAGES.md)
 - **Vercel**
 - **Netlify**
 - **CloudFlare Pages**
