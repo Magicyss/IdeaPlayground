@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from '../../i18n/I18nContext';
 import './RestTimer.css';
 
 function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComplete }) {
+  const { t } = useTranslation();
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const audioContextRef = useRef(null);
 
@@ -68,7 +70,7 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
         <div className="rest-icon">☕</div>
         
         <h1 className="rest-title">
-          {type === 'set' ? 'Rest Between Sets' : 'Rest Between Exercises'}
+          {type === 'set' ? t('rest.betweenSets') : t('rest.betweenExercises')}
         </h1>
 
         <div className="countdown-display">
@@ -84,11 +86,11 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
 
         <div className="rest-info">
           {type === 'set' && (
-            <p>Preparing for Set {currentSet} of {totalSets}</p>
+            <p>{t('rest.preparingSet', { current: currentSet, total: totalSets })}</p>
           )}
           {type === 'exercise' && nextExercise && (
             <div className="next-exercise">
-              <p>Next Exercise:</p>
+              <p>{t('rest.nextExercise')}</p>
               <h3>{nextExercise.exerciseName}</h3>
             </div>
           )}
@@ -98,7 +100,7 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
           className="skip-rest-button"
           onClick={onComplete}
         >
-          Skip Rest
+          {t('rest.skip')}
         </button>
       </div>
     </div>

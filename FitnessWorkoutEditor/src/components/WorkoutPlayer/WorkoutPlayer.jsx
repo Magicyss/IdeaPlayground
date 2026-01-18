@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from '../../i18n/I18nContext';
 import RestTimer from '../RestTimer/RestTimer';
 import './WorkoutPlayer.css';
 
 function WorkoutPlayer({ workout, onComplete, onBack }) {
+  const { t } = useTranslation();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [currentRep, setCurrentRep] = useState(1);

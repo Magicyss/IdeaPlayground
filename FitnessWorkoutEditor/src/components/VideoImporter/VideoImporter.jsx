@@ -1,9 +1,11 @@
 import { useRef } from 'react';
 import { useWorkout } from '../../contexts/WorkoutContext';
+import { useTranslation } from '../../i18n/I18nContext';
 import './VideoImporter.css';
 
 function VideoImporter() {
   const { state, dispatch, ACTIONS } = useWorkout();
+  const { t } = useTranslation();
   const fileInputRef = useRef(null);
 
   const handleFileSelect = async (e) => {
@@ -12,13 +14,13 @@ function VideoImporter() {
     for (const file of files) {
       // Check if video format is supported
       if (!file.type.startsWith('video/')) {
-        alert(`${file.name} is not a valid video file`);
+        alert(`${file.name} ${t('video.invalidFormat')}`);
         continue;
       }
 
       // Check file size (500MB limit)
       if (file.size > 500 * 1024 * 1024) {
-        alert(`${file.name} is too large. Please use videos smaller than 500MB.`);
+        alert(`${file.name} ${t('video.tooLarge')}`);
         continue;
       }
 
@@ -53,7 +55,7 @@ function VideoImporter() {
   };
 
   const handleRemoveVideo = (id) => {
-    if (confirm('Remove this video? Associated exercises will also be affected.')) {
+    if (confirm(t('video.remove'))) {
       dispatch({ type: ACTIONS.REMOVE_VIDEO, payload: id });
     }
   };
@@ -85,10 +87,10 @@ function VideoImporter() {
           id="video-input"
         />
         <label htmlFor="video-input" className="primary-button">
-          📁 Import Videos
+          {t('video.import')}
         </label>
         <p className="import-hint">
-          Supported formats: MP4, MOV, AVI, WebM (Max 500MB per file)
+          {t('builder.supportedFormats')}
         </p>
       </div>
 
@@ -101,14 +103,14 @@ function VideoImporter() {
                   <strong>{video.fileName}</strong>
                 </div>
                 <div className="video-meta">
-                  <span>Duration: {formatDuration(video.duration)}</span>
-                  <span>Size: {formatFileSize(video.size)}</span>
+                  <span>{t('video.duration')} {formatDuration(video.duration)}</span>
+                  <span>{t('video.size')} {formatFileSize(video.size)}</span>
                 </div>
               </div>
               <button
                 className="remove-video-button"
                 onClick={() => handleRemoveVideo(video.id)}
-                title="Remove video"
+                title={t('video.remove')}
               >
                 ✕
               </button>

@@ -3,8 +3,10 @@ import './App.css';
 import WorkoutBuilder from './components/WorkoutBuilder/WorkoutBuilder';
 import WorkoutPlayer from './components/WorkoutPlayer/WorkoutPlayer';
 import { WorkoutProvider } from './contexts/WorkoutContext';
+import { I18nProvider, useTranslation } from './i18n/I18nContext';
 
-function App() {
+function AppContent() {
+  const { t } = useTranslation();
   const [currentView, setCurrentView] = useState('home'); // 'home', 'editor', 'player'
   const [selectedWorkout, setSelectedWorkout] = useState(null);
 
@@ -22,20 +24,20 @@ function App() {
       case 'home':
         return (
           <div className="home-view">
-            <h1>Fitness Workout Video Editor</h1>
-            <p>Create custom follow-along workout videos</p>
+            <h1>{t('app.title')}</h1>
+            <p>{t('app.subtitle')}</p>
             <div className="home-buttons">
               <button 
                 className="primary-button"
                 onClick={() => setCurrentView('editor')}
               >
-                New Workout Plan
+                {t('home.newPlan')}
               </button>
               <button 
                 className="secondary-button"
-                onClick={() => alert('Coming soon: Load saved workouts')}
+                onClick={() => alert(t('home.comingSoon'))}
               >
-                Open Saved Plan
+                {t('home.openPlan')}
               </button>
             </div>
           </div>
@@ -61,11 +63,19 @@ function App() {
   };
 
   return (
-    <WorkoutProvider>
-      <div className="app">
-        {renderView()}
-      </div>
-    </WorkoutProvider>
+    <div className="app">
+      {renderView()}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <WorkoutProvider>
+        <AppContent />
+      </WorkoutProvider>
+    </I18nProvider>
   );
 }
 

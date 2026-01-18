@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useWorkout } from '../../contexts/WorkoutContext';
+import { useTranslation } from '../../i18n/I18nContext';
 import VideoImporter from '../VideoImporter/VideoImporter';
 import ExerciseEditor from '../ExerciseEditor/ExerciseEditor';
 import './WorkoutBuilder.css';
 
 function WorkoutBuilder({ onStartWorkout, onBack }) {
   const { state, dispatch, ACTIONS } = useWorkout();
+  const { t } = useTranslation();
   const [showExerciseEditor, setShowExerciseEditor] = useState(false);
   const [editingExercise, setEditingExercise] = useState(null);
 
@@ -36,14 +38,14 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
   };
 
   const handleDeleteExercise = (id) => {
-    if (confirm('Are you sure you want to delete this exercise?')) {
+    if (confirm(t('exercise.confirmDelete'))) {
       dispatch({ type: ACTIONS.REMOVE_EXERCISE, payload: id });
     }
   };
 
   const handleStartWorkout = () => {
     if (state.exercises.length === 0) {
-      alert('Please add at least one exercise to start the workout');
+      alert(t('builder.needExercises'));
       return;
     }
     onStartWorkout(state);
@@ -71,8 +73,8 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
   return (
     <div className="workout-builder">
       <header className="builder-header">
-        <button className="back-button" onClick={onBack}>← Back</button>
-        <h1>Workout Builder</h1>
+        <button className="back-button" onClick={onBack}>{t('builder.back')}</button>
+        <h1>{t('builder.title')}</h1>
         <input
           type="text"
           value={state.workoutName}
@@ -85,29 +87,29 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
 
       <div className="builder-content">
         <div className="builder-section">
-          <h2>Import Videos</h2>
+          <h2>{t('builder.importVideos')}</h2>
           <VideoImporter />
         </div>
 
         <div className="builder-section">
           <div className="section-header">
-            <h2>Exercises</h2>
+            <h2>{t('builder.exercises')}</h2>
             <button
               className="primary-button"
               onClick={handleAddExercise}
               disabled={state.videos.length === 0}
             >
-              + Add Exercise
+              {t('builder.addExercise')}
             </button>
           </div>
 
           {state.exercises.length === 0 ? (
             <div className="empty-state">
-              <p>No exercises added yet.</p>
+              <p>{t('builder.noExercises')}</p>
               <p className="text-secondary">
                 {state.videos.length === 0
-                  ? 'Import videos first, then add exercises.'
-                  : 'Click "Add Exercise" to get started.'}
+                  ? t('builder.importFirst')
+                  : t('builder.clickToStart')}
               </p>
             </div>
           ) : (
@@ -122,26 +124,26 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
                         className="edit-button"
                         onClick={() => handleEditExercise(exercise)}
                       >
-                        Edit
+                        {t('exercise.edit')}
                       </button>
                       <button
                         className="delete-button"
                         onClick={() => handleDeleteExercise(exercise.id)}
                       >
-                        Delete
+                        {t('exercise.delete')}
                       </button>
                     </div>
                   </div>
                   <div className="exercise-details">
-                    <p><strong>Type:</strong> {exercise.exerciseType === 'count' ? 'Count-based' : 'Duration-based'}</p>
-                    <p><strong>Video:</strong> {exercise.videoSource.fileName} ({exercise.videoSource.startTime}s - {exercise.videoSource.endTime}s)</p>
+                    <p><strong>{t('exercise.type')}</strong> {exercise.exerciseType === 'count' ? t('exercise.countBased') : t('exercise.durationBased')}</p>
+                    <p><strong>{t('exercise.video')}</strong> {exercise.videoSource.fileName} ({exercise.videoSource.startTime}s - {exercise.videoSource.endTime}s)</p>
                     {exercise.exerciseType === 'count' ? (
-                      <p><strong>Config:</strong> {exercise.parameters.repsPerSet} reps × {exercise.parameters.sets} sets</p>
+                      <p><strong>{t('exercise.config')}</strong> {exercise.parameters.repsPerSet} {t('exercise.reps')} × {exercise.parameters.sets} {t('exercise.sets')}</p>
                     ) : (
-                      <p><strong>Config:</strong> {exercise.parameters.durationSeconds}s × {exercise.parameters.sets} sets</p>
+                      <p><strong>{t('exercise.config')}</strong> {exercise.parameters.durationSeconds}{t('exercise.seconds')} × {exercise.parameters.sets} {t('exercise.sets')}</p>
                     )}
-                    <p><strong>Rest between sets:</strong> {exercise.parameters.restBetweenSets}s</p>
-                    <p><strong>Rest after exercise:</strong> {exercise.restAfterExercise || 0}s</p>
+                    <p><strong>{t('exercise.restBetweenSets')}</strong> {exercise.parameters.restBetweenSets}{t('exercise.seconds')}</p>
+                    <p><strong>{t('exercise.restAfterExercise')}</strong> {exercise.restAfterExercise || 0}{t('exercise.seconds')}</p>
                   </div>
                 </div>
               ))}
@@ -151,19 +153,19 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
 
         <div className="builder-footer">
           <div className="workout-summary">
-            <strong>Total Exercises:</strong> {state.exercises.length} | 
-            <strong> Estimated Duration:</strong> {calculateTotalDuration()}
+            <strong>{t('builder.totalExercises')}</strong> {state.exercises.length} | 
+            <strong> {t('builder.estimatedDuration')}</strong> {calculateTotalDuration()}
           </div>
           <div className="footer-actions">
-            <button className="secondary-button" onClick={() => alert('Export feature coming soon')}>
-              Export JSON
+            <button className="secondary-button" onClick={() => alert(t('builder.exportSoon'))}>
+              {t('builder.exportJSON')}
             </button>
             <button
               className="primary-button"
               onClick={handleStartWorkout}
               disabled={state.exercises.length === 0}
             >
-              Start Workout
+              {t('builder.startWorkout')}
             </button>
           </div>
         </div>

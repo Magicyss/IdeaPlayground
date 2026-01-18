@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from '../../i18n/I18nContext';
 import './ClipSelector.css';
 
 function ClipSelector({ videos, onSelectClip, onCancel }) {
+  const { t } = useTranslation();
   const [selectedVideo, setSelectedVideo] = useState(videos[0] || null);
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);

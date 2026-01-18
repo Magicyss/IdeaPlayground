@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from '../../i18n/I18nContext';
 import ClipSelector from '../ClipSelector/ClipSelector';
 import './ExerciseEditor.css';
 
 function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     exerciseName: '',
     exerciseType: 'count', // 'count' or 'duration'
