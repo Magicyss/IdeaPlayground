@@ -83,13 +83,23 @@ export function WorkoutProvider({ children }) {
   // Load saved workout from localStorage on mount
   useEffect(() => {
     try {
+      // First check if there's an imported workout
+      const importedWorkout = localStorage.getItem('importedWorkout');
+      if (importedWorkout) {
+        const data = JSON.parse(importedWorkout);
+        dispatch({ type: ACTIONS.LOAD_WORKOUT, payload: data });
+        localStorage.removeItem('importedWorkout'); // Clear after loading
+        return;
+      }
+
+      // Otherwise, load the draft
       const savedDraft = localStorage.getItem('workoutDraft');
       if (savedDraft) {
         const draft = JSON.parse(savedDraft);
         dispatch({ type: ACTIONS.LOAD_WORKOUT, payload: draft });
       }
     } catch (error) {
-      console.error('Error loading draft:', error);
+      console.error('Error loading workout:', error);
     }
   }, []);
 

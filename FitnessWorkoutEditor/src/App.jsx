@@ -20,6 +20,36 @@ function AppContent() {
     setCurrentView('editor');
   };
 
+  const handleImportJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        // Validate the imported data
+        if (!data.exercises || !Array.isArray(data.exercises)) {
+          throw new Error('Invalid workout plan format');
+        }
+
+        // Load the workout data into context
+        // This will be handled when we navigate to editor
+        localStorage.setItem('importedWorkout', JSON.stringify(data));
+        alert(t('home.importSuccess'));
+        setCurrentView('editor');
+      } catch (error) {
+        console.error('Import error:', error);
+        alert(t('home.importError'));
+      }
+    };
+    input.click();
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'home':
@@ -36,7 +66,7 @@ function AppContent() {
               </button>
               <button 
                 className="secondary-button"
-                onClick={() => alert(t('home.comingSoon'))}
+                onClick={handleImportJSON}
               >
                 {t('home.openPlan')}
               </button>

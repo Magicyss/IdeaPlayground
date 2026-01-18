@@ -7,6 +7,8 @@ export const translations = {
     'home.newPlan': '新建训练计划',
     'home.openPlan': '打开已保存的计划',
     'home.comingSoon': '即将推出：加载已保存的训练计划',
+    'home.importSuccess': '训练计划导入成功！',
+    'home.importError': '导入失败：无效的文件格式或文件已损坏',
     
     // Workout Builder
     'builder.title': '训练计划构建器',
@@ -26,6 +28,8 @@ export const translations = {
     'builder.startWorkout': '开始训练',
     'builder.exportSoon': '导出功能即将推出',
     'builder.needExercises': '请至少添加一个动作才能开始训练',
+    'builder.exportSuccess': 'JSON文件导出成功！',
+    'builder.exportError': '导出失败，请重试',
     
     // Exercise Item
     'exercise.type': '类型：',
@@ -138,6 +142,8 @@ export const translations = {
     'home.newPlan': 'New Workout Plan',
     'home.openPlan': 'Open Saved Plan',
     'home.comingSoon': 'Coming soon: Load saved workouts',
+    'home.importSuccess': 'Workout plan imported successfully!',
+    'home.importError': 'Import failed: Invalid file format or corrupted file',
     
     // Workout Builder
     'builder.title': 'Workout Builder',
@@ -157,6 +163,8 @@ export const translations = {
     'builder.startWorkout': 'Start Workout',
     'builder.exportSoon': 'Export feature coming soon',
     'builder.needExercises': 'Please add at least one exercise to start the workout',
+    'builder.exportSuccess': 'JSON file exported successfully!',
+    'builder.exportError': 'Export failed, please try again',
     
     // Exercise Item
     'exercise.type': 'Type:',

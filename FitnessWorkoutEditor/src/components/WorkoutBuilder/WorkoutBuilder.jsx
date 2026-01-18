@@ -70,6 +70,37 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
     return `${minutes}m ${seconds}s`;
   };
 
+  const handleExportJSON = () => {
+    try {
+      // Create exportable data (without video File objects)
+      const exportData = {
+        version: '1.0',
+        workoutName: state.workoutName,
+        exercises: state.exercises,
+        exportDate: new Date().toISOString(),
+      };
+
+      // Convert to JSON string
+      const jsonString = JSON.stringify(exportData, null, 2);
+      
+      // Create blob and download
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${state.workoutName.replace(/\s+/g, '_')}_${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert(t('builder.exportSuccess'));
+    } catch (error) {
+      console.error('Export error:', error);
+      alert(t('builder.exportError'));
+    }
+  };
+
   return (
     <div className="workout-builder">
       <header className="builder-header">
@@ -157,7 +188,11 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
             <strong> {t('builder.estimatedDuration')}</strong> {calculateTotalDuration()}
           </div>
           <div className="footer-actions">
-            <button className="secondary-button" onClick={() => alert(t('builder.exportSoon'))}>
+            <button 
+              className="secondary-button" 
+              onClick={handleExportJSON}
+              disabled={state.exercises.length === 0}
+            >
               {t('builder.exportJSON')}
             </button>
             <button
