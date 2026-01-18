@@ -54,12 +54,12 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
     e.preventDefault();
     
     if (!formData.exerciseName.trim()) {
-      alert('Please enter an exercise name');
+      alert(t('editor.enterName'));
       return;
     }
     
     if (!formData.videoSource) {
-      alert('Please select a video clip');
+      alert(t('editor.selectVideo'));
       return;
     }
     
@@ -70,49 +70,49 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
     <div className="exercise-editor-overlay">
       <div className="exercise-editor card">
         <div className="editor-header">
-          <h2>{exercise ? 'Edit Exercise' : 'Add Exercise'}</h2>
+          <h2>{exercise ? t('editor.edit') : t('editor.add')}</h2>
           <button className="close-button" onClick={onCancel}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="editor-form">
           <div className="form-group">
-            <label>Exercise Name*</label>
+            <label>{t('editor.name')}</label>
             <input
               type="text"
               value={formData.exerciseName}
               onChange={(e) => handleChange('exerciseName', e.target.value)}
-              placeholder="e.g., Squats, Wall Sit"
+              placeholder={t('editor.namePlaceholder')}
               required
             />
           </div>
 
           <div className="form-group">
-            <label>Exercise Type*</label>
+            <label>{t('editor.type')}</label>
             <select
               value={formData.exerciseType}
               onChange={(e) => handleChange('exerciseType', e.target.value)}
             >
-              <option value="count">Count-based (reps)</option>
-              <option value="duration">Duration-based (time)</option>
+              <option value="count">{t('editor.typeCount')}</option>
+              <option value="duration">{t('editor.typeDuration')}</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label>Video Clip*</label>
+            <label>{t('editor.videoClip')}</label>
             {formData.videoSource ? (
               <div className="selected-clip">
                 <p>
                   <strong>{formData.videoSource.fileName}</strong>
                   <br />
                   {formData.videoSource.startTime}s - {formData.videoSource.endTime}s
-                  ({formData.videoSource.endTime - formData.videoSource.startTime}s duration)
+                  ({(formData.videoSource.endTime - formData.videoSource.startTime).toFixed(3)}{t('exercise.seconds')})
                 </p>
                 <button
                   type="button"
                   className="secondary-button"
                   onClick={() => setShowClipSelector(true)}
                 >
-                  Change Clip
+                  {t('editor.changeClip')}
                 </button>
               </div>
             ) : (
@@ -121,7 +121,7 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
                 className="primary-button"
                 onClick={() => setShowClipSelector(true)}
               >
-                Select Video Clip
+                {t('editor.selectClip')}
               </button>
             )}
           </div>
@@ -130,7 +130,7 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
             <>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Reps per Set</label>
+                  <label>{t('editor.repsPerSet')}</label>
                   <input
                     type="number"
                     min="1"
@@ -139,7 +139,7 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Number of Sets</label>
+                  <label>{t('editor.numberOfSets')}</label>
                   <input
                     type="number"
                     min="1"
@@ -153,7 +153,7 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
             <>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Duration (seconds)</label>
+                  <label>{t('editor.duration')}</label>
                   <input
                     type="number"
                     min="1"
@@ -162,7 +162,7 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Number of Sets</label>
+                  <label>{t('editor.numberOfSets')}</label>
                   <input
                     type="number"
                     min="1"
@@ -176,7 +176,7 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Rest Between Sets (seconds)</label>
+              <label>{t('editor.restBetweenSets')}</label>
               <input
                 type="number"
                 min="0"
@@ -185,7 +185,7 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
               />
             </div>
             <div className="form-group">
-              <label>Rest After Exercise (seconds)</label>
+              <label>{t('editor.restAfterExercise')}</label>
               <input
                 type="number"
                 min="0"
@@ -197,10 +197,10 @@ function ExerciseEditor({ exercise, videos, onSave, onCancel }) {
 
           <div className="form-actions">
             <button type="button" className="secondary-button" onClick={onCancel}>
-              Cancel
+              {t('editor.cancel')}
             </button>
             <button type="submit" className="primary-button">
-              Save Exercise
+              {t('editor.save')}
             </button>
           </div>
         </form>

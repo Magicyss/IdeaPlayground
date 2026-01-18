@@ -12,7 +12,7 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
 
   useEffect(() => {
     if (selectedVideo && videoRef.current) {
-      setEndTime(Math.min(30, selectedVideo.duration)); // Default 30s or video duration
+      setEndTime(selectedVideo.duration); // Default to video end
     }
   }, [selectedVideo]);
 
@@ -23,10 +23,8 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
     const handleTimeUpdate = () => {
       setCurrentTime(video.currentTime);
       
-      // Loop the clip selection
-      if (video.currentTime >= endTime) {
-        video.currentTime = startTime;
-      }
+      // Don't auto-loop - let user control playback
+      // Removed auto-jump to start when reaching end
     };
 
     video.addEventListener('timeupdate', handleTimeUpdate);
@@ -36,7 +34,7 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
   const handleVideoSelect = (video) => {
     setSelectedVideo(video);
     setStartTime(0);
-    setEndTime(Math.min(30, video.duration));
+    setEndTime(video.duration); // Default to video end
   };
 
   const handleSetStart = () => {
