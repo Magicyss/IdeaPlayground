@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node -e \"if(!require('fs').existsSync('node_modules')){console.error('\\n❌ Dependencies not installed. Please run: npm install\\n');process.exit(1)}\"",
+    "check-deps": "node scripts/check-deps.js",
+    "predev": "npm run check-deps",
     "dev": "vite",
-    "prebuild": "node -e \"if(!require('fs').existsSync('node_modules')){console.error('\\n❌ Dependencies not installed. Please run: npm install\\n');process.exit(1)}\"",
+    "prebuild": "npm run check-deps",
     "build": "vite build",
     "lint": "eslint .",
-    "prepreview": "node -e \"if(!require('fs').existsSync('node_modules')){console.error('\\n❌ Dependencies not installed. Please run: npm install\\n');process.exit(1)}\"",
+    "prepreview": "npm run check-deps",
     "preview": "vite preview"
   },
   "dependencies": {
