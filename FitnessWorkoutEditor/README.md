@@ -6,11 +6,17 @@ A comprehensive frontend application for creating custom follow-along workout vi
 
 ## 快速开始 / Quick Start
 
-### 安装依赖 / Install Dependencies
+### ⚠️ 重要：首次运行前必须安装依赖 / Important: Install Dependencies Before First Run
+
+**在运行任何命令之前，必须先安装依赖！** / **You must install dependencies before running any commands!**
 
 ```bash
 npm install
 ```
+
+> ⚠️ 如果不先运行 `npm install`，会出现 `'vite' 不是内部或外部命令` 的错误。
+>
+> ⚠️ If you don't run `npm install` first, you'll get an error like `'vite' is not recognized as a command`.
 
 ### 启动开发服务器 / Start Development Server
 
@@ -37,6 +43,29 @@ After building, the generated files will be in the `dist` directory.
 ```bash
 npm run preview
 ```
+
+## 常见问题 / Troubleshooting
+
+### ❌ 错误：'vite' 不是内部或外部命令 / Error: 'vite' is not recognized
+
+**问题** / **Issue**: 运行 `npm run dev` 或 `npm run build` 时出现错误。
+
+**原因** / **Cause**: 依赖未安装。
+
+**解决方法** / **Solution**: 运行 `npm install` 安装所有依赖。
+
+```bash
+npm install
+```
+
+安装完成后，重新运行之前的命令。
+
+After installation completes, run the previous command again.
+
+### 📦 需要的环境 / Requirements
+
+- **Node.js**: 版本 18 或更高 / Version 18 or higher
+- **npm**: 版本 8 或更高 / Version 8 or higher
 
 ## 主要功能 / Key Features
 
