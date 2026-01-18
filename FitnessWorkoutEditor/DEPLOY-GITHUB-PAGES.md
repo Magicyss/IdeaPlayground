@@ -52,7 +52,7 @@ export default defineConfig({
 
 ### 步骤 1：创建 GitHub Actions 工作流文件
 
-在项目根目录创建 `.github/workflows/deploy.yml` 文件：
+在项目根目录创建 `.github/workflows/deploy-fitness-editor.yml` 文件（文件名可以自定义）：
 
 ```yaml
 name: Deploy to GitHub Pages
@@ -320,7 +320,7 @@ https://magicyss.github.io/IdeaPlayground/
 
 如果遇到问题，可以：
 
-1. 查看 [Issues](https://github.com/Magicyss/IdeaPlayground/issues) 寻找类似问题
+1. 查看 [Issues](https://github.com/<username>/<repository>/issues) 寻找类似问题
 2. 创建新的 Issue 描述你的问题
 3. 参考本文档的常见问题章节
 
