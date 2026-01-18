@@ -36,13 +36,13 @@ function VideoImporter() {
           id: Date.now().toString() + Math.random(),
           file,
           fileName: file.name,
-          url,
+          url, // Keep the URL, don't revoke it - we need it for playback
           duration: video.duration,
           size: file.size,
         };
         
         dispatch({ type: ACTIONS.ADD_VIDEO, payload: videoData });
-        URL.revokeObjectURL(url);
+        // Don't revoke the URL here - it's needed for video playback
       };
       
       video.src = url;

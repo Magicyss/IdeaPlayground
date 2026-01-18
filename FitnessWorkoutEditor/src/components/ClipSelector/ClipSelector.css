@@ -91,6 +91,21 @@
   font-size: 0.9rem;
 }
 
+.marker-group .time-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: 'Courier New', monospace;
+}
+
+.marker-group .time-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
 .marker-group input[type="range"] {
   width: 100%;
 }

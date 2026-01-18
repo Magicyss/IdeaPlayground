@@ -48,12 +48,16 @@ body {
   font-size: 2.5rem;
   margin-bottom: 1rem;
   color: var(--text-primary);
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .home-view p {
   font-size: 1.2rem;
   color: var(--text-secondary);
   margin-bottom: 2rem;
+  word-wrap: break-word;
+  max-width: 600px;
 }
 
 .home-buttons {
@@ -61,6 +65,7 @@ body {
   gap: 1rem;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
 }
 
 /* Buttons */

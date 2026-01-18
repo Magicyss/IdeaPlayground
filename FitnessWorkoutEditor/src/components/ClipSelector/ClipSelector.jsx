@@ -55,23 +55,64 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
   };
 
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const ms = Math.floor((seconds % 1) * 1000);
+    
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+  };
+
+  const parseTimeInput = (timeStr) => {
+    // Parse hh:mm:ss.xxx or mm:ss.xxx format
+    const parts = timeStr.split(':');
+    let hours = 0, mins = 0, secs = 0;
+    
+    if (parts.length === 3) {
+      // hh:mm:ss.xxx format
+      hours = parseInt(parts[0]) || 0;
+      mins = parseInt(parts[1]) || 0;
+      const secParts = parts[2].split('.');
+      secs = parseInt(secParts[0]) || 0;
+      const ms = secParts[1] ? parseInt(secParts[1].padEnd(3, '0').slice(0, 3)) || 0 : 0;
+      return hours * 3600 + mins * 60 + secs + ms / 1000;
+    } else if (parts.length === 2) {
+      // mm:ss.xxx format
+      mins = parseInt(parts[0]) || 0;
+      const secParts = parts[1].split('.');
+      secs = parseInt(secParts[0]) || 0;
+      const ms = secParts[1] ? parseInt(secParts[1].padEnd(3, '0').slice(0, 3)) || 0 : 0;
+      return mins * 60 + secs + ms / 1000;
+    }
+    return 0;
+  };
+
+  const handleTimeInputChange = (value, isStart) => {
+    const timeInSeconds = parseTimeInput(value);
+    if (!isNaN(timeInSeconds) && timeInSeconds >= 0 && timeInSeconds <= selectedVideo.duration) {
+      if (isStart) {
+        setStartTime(timeInSeconds);
+      } else {
+        setEndTime(timeInSeconds);
+      }
+    }
   };
 
   const handleConfirm = () => {
     if (startTime >= endTime) {
-      alert('End time must be after start time');
+      alert(t('clip.errorEndTime'));
       return;
     }
 
     const clipData = {
       videoId: selectedVideo.id,
       fileName: selectedVideo.fileName,
-      startTime: Math.round(startTime * 10) / 10,
-      endTime: Math.round(endTime * 10) / 10,
-      duration: Math.round((endTime - startTime) * 10) / 10,
+      startTime: Math.round(startTime * 1000) / 1000, // Round to milliseconds
+      endTime: Math.round(endTime * 1000) / 1000,
+      duration: Math.round((endTime - startTime) * 1000) / 1000,
       videoUrl: selectedVideo.url,
     };
 
@@ -82,9 +123,9 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
     return (
       <div className="clip-selector-overlay">
         <div className="clip-selector card">
-          <p>No videos available. Please import videos first.</p>
+          <p>{t('clip.noVideos')}</p>
           <button className="primary-button" onClick={onCancel}>
-            Close
+            {t('clip.close')}
           </button>
         </div>
       </div>
@@ -95,12 +136,12 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
     <div className="clip-selector-overlay">
       <div className="clip-selector card">
         <div className="selector-header">
-          <h3>Select Video Clip</h3>
+          <h3>{t('clip.selectClip')}</h3>
           <button className="close-button" onClick={onCancel}>✕</button>
         </div>
 
         <div className="video-selection">
-          <label>Choose Video:</label>
+          <label>{t('clip.chooseVideo')}</label>
           <select
             value={selectedVideo.id}
             onChange={(e) => {
@@ -127,54 +168,78 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
 
         <div className="timeline-controls">
           <div className="time-display">
-            <span>Current: {formatTime(currentTime)}</span>
-            <span>Duration: {formatTime(selectedVideo.duration)}</span>
+            <span>{t('clip.current')}: {formatTime(currentTime)}</span>
+            <span>{t('clip.duration')}: {formatTime(selectedVideo.duration)}</span>
           </div>
 
           <div className="clip-markers">
             <div className="marker-group">
-              <label>Start Time: {formatTime(startTime)}</label>
+              <label>{t('clip.startTime')}: {formatTime(startTime)}</label>
+              <input
+                type="text"
+                className="time-input"
+                placeholder="mm:ss.xxx or hh:mm:ss.xxx"
+                onBlur={(e) => handleTimeInputChange(e.target.value, true)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleTimeInputChange(e.target.value, true);
+                    e.target.blur();
+                  }
+                }}
+              />
               <input
                 type="range"
                 min="0"
                 max={selectedVideo.duration}
-                step="0.1"
+                step="0.001"
                 value={startTime}
                 onChange={(e) => setStartTime(parseFloat(e.target.value))}
               />
               <button className="secondary-button" onClick={handleSetStart}>
-                Set as Start
+                {t('clip.setAsStart')}
               </button>
             </div>
 
             <div className="marker-group">
-              <label>End Time: {formatTime(endTime)}</label>
+              <label>{t('clip.endTime')}: {formatTime(endTime)}</label>
+              <input
+                type="text"
+                className="time-input"
+                placeholder="mm:ss.xxx or hh:mm:ss.xxx"
+                onBlur={(e) => handleTimeInputChange(e.target.value, false)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleTimeInputChange(e.target.value, false);
+                    e.target.blur();
+                  }
+                }}
+              />
               <input
                 type="range"
                 min="0"
                 max={selectedVideo.duration}
-                step="0.1"
+                step="0.001"
                 value={endTime}
                 onChange={(e) => setEndTime(parseFloat(e.target.value))}
               />
               <button className="secondary-button" onClick={handleSetEnd}>
-                Set as End
+                {t('clip.setAsEnd')}
               </button>
             </div>
           </div>
 
           <div className="clip-info">
-            <p>Selected Clip: {formatTime(startTime)} - {formatTime(endTime)}</p>
-            <p>Clip Duration: {formatTime(endTime - startTime)}</p>
+            <p>{t('clip.selectedClip')}: {formatTime(startTime)} - {formatTime(endTime)}</p>
+            <p>{t('clip.clipDuration')}: {formatTime(endTime - startTime)}</p>
           </div>
         </div>
 
         <div className="selector-actions">
           <button className="secondary-button" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button className="primary-button" onClick={handleConfirm}>
-            Confirm Selection
+            {t('clip.confirm')}
           </button>
         </div>
       </div>
