@@ -110,15 +110,6 @@ export const translations = {
     'player.loading': '加载中...',
     'player.performReps': '执行 {count} 次',
     'player.holdFor': '保持 {seconds} 秒',
-    'player.repetitions': '次重复',
-    'player.hold': '保持',
-    'player.pause': '⏸️ 暂停',
-    'player.resume': '▶️ 继续',
-    'player.skip': '⏭️ 跳过',
-    'player.completeSet': '✓ 完成本组',
-    'player.completed': '🎉 训练完成！',
-    'player.completedMessage': '太棒了！您完成了 {count} 个动作。',
-    'player.backToEditor': '返回编辑器',
     
     // Rest Timer
     'rest.betweenSets': '组间休息',
