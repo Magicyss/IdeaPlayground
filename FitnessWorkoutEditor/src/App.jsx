@@ -2,6 +2,7 @@ import { useState } from 'react';
 import './App.css';
 import WorkoutBuilder from './components/WorkoutBuilder/WorkoutBuilder';
 import WorkoutPlayer from './components/WorkoutPlayer/WorkoutPlayer';
+import LanguageSwitcher from './components/LanguageSwitcher/LanguageSwitcher';
 import { WorkoutProvider } from './contexts/WorkoutContext';
 import { I18nProvider, useTranslation } from './i18n/I18nContext';
 
@@ -64,6 +65,7 @@ function AppContent() {
 
   return (
     <div className="app">
+      <LanguageSwitcher />
       {renderView()}
     </div>
   );
