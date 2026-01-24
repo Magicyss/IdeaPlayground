@@ -39,6 +39,8 @@
   font-size: 0.9rem;
   opacity: 0.8;
   white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 100px; /* Leave space for language switcher */
 }
 
 .exercise-view {
