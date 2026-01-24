@@ -12,6 +12,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .back-button {
@@ -21,10 +22,19 @@
   font-size: 1.2rem;
   padding: 0.5rem;
   color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .back-button:hover {
   color: var(--primary-color);
+}
+
+.builder-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .workout-name-input {
@@ -33,6 +43,9 @@
   border: 1px solid transparent;
   background: transparent;
   padding: 0.5rem;
+  flex: 1;
+  min-width: 120px;
+  max-width: calc(100vw - 450px); /* Leave space for back button, title, and language switcher */
 }
 
 .workout-name-input:hover,
@@ -181,13 +194,14 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .builder-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .builder-header h1 {
+    font-size: 1.2rem;
   }
-  
+
   .workout-name-input {
     width: 100%;
+    max-width: none;
+    order: 3; /* Move input to next row */
   }
   
   .builder-content {

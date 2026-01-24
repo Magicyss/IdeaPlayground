@@ -21,12 +21,18 @@
   background: transparent;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .player-header h2 {
   flex: 1;
   margin: 0;
   font-size: 1.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100vw - 300px); /* Leave space for back button and language switcher */
 }
 
 .player-progress {
