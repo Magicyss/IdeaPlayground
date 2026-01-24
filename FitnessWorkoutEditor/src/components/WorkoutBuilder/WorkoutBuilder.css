@@ -42,8 +42,8 @@
   border: 1px solid transparent;
   background: transparent;
   padding: 0.5rem;
-  min-width: 150px;
-  max-width: 300px;
+  flex: 1;
+  min-width: 0; /* Allow shrinking below content width */
 }
 
 .workout-name-input:hover,
