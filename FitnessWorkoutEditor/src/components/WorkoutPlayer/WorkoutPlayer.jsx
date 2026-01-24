@@ -28,6 +28,7 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
   const [isPaused, setIsPaused] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [playCount, setPlayCount] = useState(0); // Track reps for count-based exercises
+  const [durationRemaining, setDurationRemaining] = useState(0); // Track remaining time for duration-based exercises
   const [earlyRestProgress, setEarlyRestProgress] = useState(null); // Store progress when early rest triggered
   const [displayMode, setDisplayMode] = useState(() => {
     // Initialize from localStorage
@@ -36,6 +37,7 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
   });
 
   const videoRef = useRef(null);
+  const durationTimerRef = useRef(null);
   const currentExercise = workout.exercises[currentExerciseIndex];
 
   // Get early rest behavior from workout settings or default
@@ -52,8 +54,50 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
       const video = videoRef.current;
       video.currentTime = currentExercise.videoSource.startTime;
       video.play().catch(err => console.log('Autoplay prevented:', err));
+
+      // Initialize duration timer for duration-based exercises
+      if (currentExercise.exerciseType === 'duration') {
+        setDurationRemaining(currentExercise.parameters.durationSeconds);
+      }
     }
   }, [currentExerciseIndex, currentSet, isResting, currentExercise]);
+
+  // Duration timer for duration-based exercises
+  useEffect(() => {
+    if (!currentExercise || currentExercise.exerciseType !== 'duration' || isResting || isPaused) {
+      // Clear timer when not needed
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+        durationTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Start countdown timer
+    durationTimerRef.current = setInterval(() => {
+      setDurationRemaining(prev => {
+        if (prev <= 1) {
+          // Time's up - complete the set
+          clearInterval(durationTimerRef.current);
+          durationTimerRef.current = null;
+          if (videoRef.current) {
+            videoRef.current.pause();
+          }
+          // Use setTimeout to avoid state update during render
+          setTimeout(() => completeCurrentSet(), 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+        durationTimerRef.current = null;
+      }
+    };
+  }, [currentExercise, isResting, isPaused, currentSet, currentExerciseIndex]);
 
   // Handle video clip looping and progression
   useEffect(() => {
@@ -78,9 +122,9 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
             completeCurrentSet();
           }
         } else {
-          // Duration-based: stop after one play
-          video.pause();
-          completeCurrentSet();
+          // Duration-based: loop video until timer runs out
+          // Just loop back to start - the duration timer handles completion
+          video.currentTime = startTime;
         }
       }
     };
@@ -162,10 +206,17 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
       videoRef.current.pause();
     }
 
+    // Clear duration timer if running
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
+    }
+
     // Store current progress for potential continuation
     setEarlyRestProgress({
       rep: currentRep,
       playCount: playCount,
+      durationRemaining: durationRemaining, // Save duration progress too
     });
 
     // Start rest timer using configured rest between sets time
@@ -204,6 +255,10 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
           // Restart current set from beginning
           setPlayCount(0);
           setCurrentRep(1);
+          // Reset duration for duration-based exercises
+          if (currentExercise.exerciseType === 'duration') {
+            setDurationRemaining(currentExercise.parameters.durationSeconds);
+          }
           break;
 
         case EARLY_REST_BEHAVIOR.CONTINUE_PROGRESS:
@@ -211,6 +266,10 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
           if (earlyRestProgress) {
             setPlayCount(earlyRestProgress.playCount);
             setCurrentRep(earlyRestProgress.rep);
+            // Restore duration for duration-based exercises
+            if (earlyRestProgress.durationRemaining !== undefined) {
+              setDurationRemaining(earlyRestProgress.durationRemaining);
+            }
           }
           break;
 
@@ -345,7 +404,7 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
                 <div className="stat main-stat">
                   <span className="stat-label">{t('player.duration')}</span>
                   <span className={`stat-value ${displayMode === DISPLAY_MODE.MINI ? 'giant' : ''}`}>
-                    {currentExercise.parameters.durationSeconds}{t('exercise.seconds')}
+                    {durationRemaining}{t('exercise.seconds')}
                   </span>
                 </div>
               )}
