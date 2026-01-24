@@ -10,13 +10,6 @@ const EARLY_REST_BEHAVIOR = {
   CONTINUE_PROGRESS: 'continueProgress',
 };
 
-// Display modes
-const DISPLAY_MODE = {
-  FULL: 'full',
-  COMPACT: 'compact',
-  MINI: 'mini',
-};
-
 function WorkoutPlayer({ workout, onComplete, onBack }) {
   const { t } = useTranslation();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -30,11 +23,6 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
   const [playCount, setPlayCount] = useState(0); // Track reps for count-based exercises
   const [durationRemaining, setDurationRemaining] = useState(0); // Track remaining time for duration-based exercises
   const [earlyRestProgress, setEarlyRestProgress] = useState(null); // Store progress when early rest triggered
-  const [displayMode, setDisplayMode] = useState(() => {
-    // Initialize from localStorage
-    const saved = localStorage.getItem('workoutPlayerDisplayMode');
-    return saved || DISPLAY_MODE.FULL;
-  });
 
   const videoRef = useRef(null);
   const durationTimerRef = useRef(null);
@@ -42,11 +30,6 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
 
   // Get early rest behavior from workout settings or default
   const earlyRestBehavior = workout.globalSettings?.earlyRestBehavior || EARLY_REST_BEHAVIOR.SKIP_TO_NEXT;
-
-  // Persist display mode to localStorage
-  useEffect(() => {
-    localStorage.setItem('workoutPlayerDisplayMode', displayMode);
-  }, [displayMode]);
 
   // Set video start time when exercise changes
   useEffect(() => {
@@ -295,33 +278,6 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
     }
   };
 
-  // Render mode switch buttons
-  const renderModeSwitcher = () => (
-    <div className="mode-switcher">
-      <button
-        className={`mode-button ${displayMode === DISPLAY_MODE.FULL ? 'active' : ''}`}
-        onClick={() => setDisplayMode(DISPLAY_MODE.FULL)}
-        title={t('displayMode.full')}
-      >
-        📺
-      </button>
-      <button
-        className={`mode-button ${displayMode === DISPLAY_MODE.COMPACT ? 'active' : ''}`}
-        onClick={() => setDisplayMode(DISPLAY_MODE.COMPACT)}
-        title={t('displayMode.compact')}
-      >
-        📱
-      </button>
-      <button
-        className={`mode-button ${displayMode === DISPLAY_MODE.MINI ? 'active' : ''}`}
-        onClick={() => setDisplayMode(DISPLAY_MODE.MINI)}
-        title={t('displayMode.mini')}
-      >
-        📝
-      </button>
-    </div>
-  );
-
   if (isCompleted) {
     return (
       <div className="workout-player">
@@ -352,15 +308,12 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
   };
 
   return (
-    <div className={`workout-player mode-${displayMode}`}>
+    <div className="workout-player">
       <header className="player-header">
         <button className="back-button" onClick={onBack}>{t('player.exit')}</button>
         <h2>{workout.workoutName}</h2>
-        <div className="header-right">
-          {renderModeSwitcher()}
-          <div className="player-progress">
-            {t('player.exercise')} {currentExerciseIndex + 1} / {workout.exercises.length}
-          </div>
+        <div className="player-progress">
+          {t('player.exercise')} {currentExerciseIndex + 1} / {workout.exercises.length}
         </div>
       </header>
 
@@ -371,39 +324,33 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
           currentSet={currentSet}
           totalSets={currentExercise.parameters.sets}
           nextExercise={getNextExerciseForPreview()}
-          displayMode={displayMode}
           onComplete={handleRestComplete}
         />
       ) : (
         <div className="exercise-view">
-          {/* Video container - hidden in mini mode */}
-          {displayMode !== DISPLAY_MODE.MINI && (
-            <div className={`video-container ${displayMode === DISPLAY_MODE.COMPACT ? 'compact' : ''}`}>
-              <video
-                ref={videoRef}
-                src={currentExercise.videoSource.videoUrl}
-                className="exercise-video"
-              />
-            </div>
-          )}
+          <div className="video-container">
+            <video
+              ref={videoRef}
+              src={currentExercise.videoSource.videoUrl}
+              className="exercise-video"
+            />
+          </div>
 
-          <div className={`exercise-info ${displayMode === DISPLAY_MODE.MINI ? 'mini-mode' : ''}`}>
-            <h1 className={displayMode === DISPLAY_MODE.MINI ? 'mini-title' : ''}>
-              {currentExercise.exerciseName}
-            </h1>
+          <div className="exercise-info">
+            <h1>{currentExercise.exerciseName}</h1>
 
-            <div className={`exercise-stats ${displayMode === DISPLAY_MODE.MINI ? 'mini-stats' : ''}`}>
+            <div className="exercise-stats">
               {currentExercise.exerciseType === 'count' ? (
-                <div className="stat main-stat">
+                <div className="stat">
                   <span className="stat-label">{t('player.reps')}</span>
-                  <span className={`stat-value ${displayMode === DISPLAY_MODE.MINI ? 'giant' : ''}`}>
+                  <span className="stat-value">
                     {currentRep} / {currentExercise.parameters.repsPerSet}
                   </span>
                 </div>
               ) : (
-                <div className="stat main-stat">
+                <div className="stat">
                   <span className="stat-label">{t('player.duration')}</span>
-                  <span className={`stat-value ${displayMode === DISPLAY_MODE.MINI ? 'giant' : ''}`}>
+                  <span className="stat-value">
                     {durationRemaining}{t('exercise.seconds')}
                   </span>
                 </div>
@@ -415,41 +362,33 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
               </div>
             </div>
 
-            {displayMode === DISPLAY_MODE.FULL && (
-              <div className="exercise-instructions">
-                <p>
-                  {currentExercise.exerciseType === 'count'
-                    ? t('player.performReps').replace('{count}', currentExercise.parameters.repsPerSet)
-                    : t('player.holdFor').replace('{seconds}', currentExercise.parameters.durationSeconds)}
-                </p>
-              </div>
-            )}
+            <div className="exercise-instructions">
+              <p>
+                {currentExercise.exerciseType === 'count'
+                  ? t('player.performReps').replace('{count}', currentExercise.parameters.repsPerSet)
+                  : t('player.holdFor').replace('{seconds}', currentExercise.parameters.durationSeconds)}
+              </p>
+            </div>
           </div>
 
-          <div className={`player-controls ${displayMode !== DISPLAY_MODE.FULL ? 'compact-controls' : ''}`}>
+          <div className="player-controls">
             <button
               className="control-button"
               onClick={handleTogglePause}
-              title={isPaused ? t('player.resume') : t('player.pause')}
             >
-              {displayMode === DISPLAY_MODE.FULL
-                ? (isPaused ? t('player.resume') : t('player.pause'))
-                : (isPaused ? '▶️' : '⏸️')
-              }
+              {isPaused ? t('player.resume') : t('player.pause')}
             </button>
             <button
               className="control-button"
               onClick={handleSkip}
-              title={t('player.skip')}
             >
-              {displayMode === DISPLAY_MODE.FULL ? t('player.skip') : '⏭️'}
+              {t('player.skip')}
             </button>
             <button
               className="control-button need-rest-button"
               onClick={handleNeedRest}
-              title={t('player.needRest')}
             >
-              {displayMode === DISPLAY_MODE.FULL ? t('player.needRest') : '💤'}
+              {t('player.needRest')}
             </button>
           </div>
         </div>

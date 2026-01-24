@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from '../../i18n/I18nContext';
 import './RestTimer.css';
 
-function RestTimer({ duration, type, currentSet, totalSets, nextExercise, displayMode = 'full', onComplete }) {
+function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComplete }) {
   const { t } = useTranslation();
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const audioContextRef = useRef(null);
@@ -111,90 +111,6 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, displa
       .replace('{sets}', exercise.parameters.sets);
   };
 
-  // Mini mode - simple layout
-  if (displayMode === 'mini') {
-    return (
-      <div className="rest-timer mini-mode">
-        <div className="rest-content">
-          <h1 className="rest-title-mini">
-            {type === 'set' || type === 'early' ? t('rest.betweenSets') : t('rest.betweenExercises')}
-          </h1>
-
-          <div className="countdown-display-mini">
-            {formatTime(timeRemaining)}
-          </div>
-
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-
-          {type === 'set' && (
-            <p className="set-info-mini">{t('rest.preparingSet', { current: currentSet, total: totalSets })}</p>
-          )}
-
-          <button
-            className="skip-rest-button"
-            onClick={onComplete}
-          >
-            {t('rest.skip')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Compact mode - smaller layout
-  if (displayMode === 'compact') {
-    return (
-      <div className="rest-timer compact-mode">
-        <div className="rest-content">
-          <h1 className="rest-title-compact">
-            {type === 'set' || type === 'early' ? t('rest.betweenSets') : t('rest.betweenExercises')}
-          </h1>
-
-          <div className="countdown-display-compact">
-            {formatTime(timeRemaining)}
-          </div>
-
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-
-          {/* Compact video preview */}
-          {nextExercise && nextExercise.videoSource && (
-            <div className="next-exercise-preview compact">
-              <video
-                ref={previewVideoRef}
-                src={nextExercise.videoSource.videoUrl}
-                className="preview-video-compact"
-                muted
-                playsInline
-              />
-              <div className="preview-info-compact">
-                <span className="preview-name">{nextExercise.exerciseName}</span>
-                <span className="preview-details">{getExerciseDetails(nextExercise)}</span>
-              </div>
-            </div>
-          )}
-
-          <button
-            className="skip-rest-button"
-            onClick={onComplete}
-          >
-            {t('rest.skip')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Full mode - default
   return (
     <div className="rest-timer">
       <div className="rest-content">
