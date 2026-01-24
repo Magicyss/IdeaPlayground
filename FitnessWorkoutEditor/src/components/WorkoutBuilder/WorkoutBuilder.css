@@ -8,7 +8,6 @@
 .builder-header {
   background: var(--surface);
   padding: 1rem 2rem;
-  padding-right: 6rem; /* Reserve space for language switcher */
   box-shadow: var(--shadow);
   display: flex;
   align-items: center;
@@ -24,6 +23,7 @@
   padding: 0.5rem;
   color: var(--text-secondary);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .back-button:hover {
@@ -34,6 +34,7 @@
   margin: 0;
   font-size: 1.5rem;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .workout-name-input {
@@ -43,7 +44,8 @@
   background: transparent;
   padding: 0.5rem;
   flex: 1;
-  min-width: 0; /* Allow shrinking below content width */
+  min-width: 120px;
+  max-width: calc(100vw - 450px); /* Leave space for back button, title, and language switcher */
 }
 
 .workout-name-input:hover,
@@ -192,16 +194,13 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .builder-header {
-    padding-right: 5rem;
-  }
-
   .builder-header h1 {
     font-size: 1.2rem;
   }
 
   .workout-name-input {
     width: 100%;
+    max-width: none;
     order: 3; /* Move input to next row */
   }
   
