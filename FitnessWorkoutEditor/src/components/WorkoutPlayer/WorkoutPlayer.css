@@ -9,6 +9,7 @@
 .player-header {
   background: rgba(0, 0, 0, 0.8);
   padding: 1rem 2rem;
+  padding-right: 6rem; /* Reserve space for language switcher */
   display: flex;
   align-items: center;
   gap: 1rem;
