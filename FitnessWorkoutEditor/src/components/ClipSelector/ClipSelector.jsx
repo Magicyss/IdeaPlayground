@@ -176,7 +176,7 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
               <input
                 type="text"
                 className="time-input"
-                placeholder="mm:ss.xxx or hh:mm:ss.xxx"
+                placeholder="MM:SS.SSS or HH:MM:SS.SSS"
                 onBlur={(e) => handleTimeInputChange(e.target.value, true)}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
@@ -203,7 +203,7 @@ function ClipSelector({ videos, onSelectClip, onCancel }) {
               <input
                 type="text"
                 className="time-input"
-                placeholder="mm:ss.xxx or hh:mm:ss.xxx"
+                placeholder="MM:SS.SSS or HH:MM:SS.SSS"
                 onBlur={(e) => handleTimeInputChange(e.target.value, false)}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
