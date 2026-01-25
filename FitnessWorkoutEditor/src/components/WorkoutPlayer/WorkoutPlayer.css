@@ -32,12 +32,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: calc(100vw - 300px); /* Leave space for back button and language switcher */
+  max-width: calc(100vw - 300px);
 }
 
 .player-progress {
   font-size: 0.9rem;
   opacity: 0.8;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 100px; /* Leave space for language switcher */
 }
 
 .exercise-view {
@@ -137,6 +140,16 @@
   border-color: var(--primary-dark);
 }
 
+.need-rest-button {
+  background: rgba(147, 51, 234, 0.3);
+  border-color: rgba(147, 51, 234, 0.5);
+}
+
+.need-rest-button:hover {
+  background: rgba(147, 51, 234, 0.5);
+  border-color: rgba(147, 51, 234, 0.7);
+}
+
 /* Completion Screen */
 .completion-screen {
   flex: 1;
@@ -168,32 +181,32 @@
   .player-header {
     padding: 1rem;
   }
-  
+
   .player-header h2 {
     font-size: 1.2rem;
   }
-  
+
   .exercise-info h1 {
     font-size: 1.5rem;
   }
-  
+
   .exercise-stats {
     gap: 2rem;
   }
-  
+
   .stat-value {
     font-size: 1.5rem;
   }
-  
+
   .player-controls {
     flex-direction: column;
     padding: 1rem;
   }
-  
+
   .control-button {
     width: 100%;
   }
-  
+
   .completion-screen h1 {
     font-size: 2rem;
   }

@@ -114,6 +114,7 @@ export const translations = {
     'player.loading': '加载中...',
     'player.performReps': '执行 {count} 次',
     'player.holdFor': '保持 {seconds} 秒',
+    'player.needRest': '需要休息',
     
     // Rest Timer
     'rest.betweenSets': '组间休息',
@@ -121,6 +122,22 @@ export const translations = {
     'rest.preparingSet': '准备第 {current} 组（共 {total} 组）',
     'rest.nextExercise': '下一个动作：',
     'rest.skip': '跳过休息',
+    'rest.nextExerciseDetails': '{reps} × {sets} 组',
+    'rest.nextExerciseDuration': '{duration}秒 × {sets} 组',
+
+    // Early Rest Behavior
+    'earlyRest.behavior': '提前休息后行为',
+    'earlyRest.skipToNext': '跳到下一组',
+    'earlyRest.retrySet': '重试当前组',
+    'earlyRest.continueProgress': '继续当前进度',
+    'earlyRest.skipToNextDesc': '休息后直接开始下一组',
+    'earlyRest.retrySetDesc': '休息后从当前组第1次重新开始',
+    'earlyRest.continueProgressDesc': '休息后从中断的地方继续',
+
+    // Display Modes
+    'displayMode.full': '全量模式',
+    'displayMode.compact': '精简模式',
+    'displayMode.mini': '迷你模式',
     
     // Common
     'common.of': '/',
@@ -248,6 +265,7 @@ export const translations = {
     'player.loading': 'Loading...',
     'player.performReps': 'Perform {count} repetitions',
     'player.holdFor': 'Hold for {seconds} seconds',
+    'player.needRest': 'Need Rest',
     
     // Rest Timer
     'rest.betweenSets': 'Rest Between Sets',
@@ -255,6 +273,22 @@ export const translations = {
     'rest.preparingSet': 'Preparing for Set {current} of {total}',
     'rest.nextExercise': 'Next Exercise:',
     'rest.skip': 'Skip Rest',
+    'rest.nextExerciseDetails': '{reps} × {sets} sets',
+    'rest.nextExerciseDuration': '{duration}s × {sets} sets',
+
+    // Early Rest Behavior
+    'earlyRest.behavior': 'After Early Rest Behavior',
+    'earlyRest.skipToNext': 'Skip to Next Set',
+    'earlyRest.retrySet': 'Retry Current Set',
+    'earlyRest.continueProgress': 'Continue Progress',
+    'earlyRest.skipToNextDesc': 'Start next set after rest',
+    'earlyRest.retrySetDesc': 'Restart current set from rep 1',
+    'earlyRest.continueProgressDesc': 'Continue from where you stopped',
+
+    // Display Modes
+    'displayMode.full': 'Full Mode',
+    'displayMode.compact': 'Compact Mode',
+    'displayMode.mini': 'Mini Mode',
     
     // Common
     'common.of': '/',

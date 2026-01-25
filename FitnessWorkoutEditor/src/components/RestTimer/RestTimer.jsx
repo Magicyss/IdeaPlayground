@@ -6,6 +6,7 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
   const { t } = useTranslation();
   const [timeRemaining, setTimeRemaining] = useState(duration);
   const audioContextRef = useRef(null);
+  const previewVideoRef = useRef(null);
 
   useEffect(() => {
     setTimeRemaining(duration);
@@ -29,13 +30,46 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
     return () => clearTimeout(timer);
   }, [timeRemaining, onComplete]);
 
+  // Setup preview video looping
+  useEffect(() => {
+    const video = previewVideoRef.current;
+    if (!video || !nextExercise) return;
+
+    const { startTime, endTime } = nextExercise.videoSource;
+
+    const handleTimeUpdate = () => {
+      if (video.currentTime >= endTime) {
+        video.currentTime = startTime;
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      video.currentTime = startTime;
+      video.play().catch(err => console.log('Preview autoplay prevented:', err));
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+    // If video is already loaded, start playing
+    if (video.readyState >= 2) {
+      video.currentTime = startTime;
+      video.play().catch(err => console.log('Preview autoplay prevented:', err));
+    }
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, [nextExercise]);
+
   const playBeep = (frequency = 600) => {
     try {
       // Create Web Audio API beep
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
-      
+
       const ctx = audioContextRef.current;
       const oscillator = ctx.createOscillator();
       const gainNode = ctx.createGain();
@@ -64,13 +98,26 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
 
   const progressPercent = ((duration - timeRemaining) / duration) * 100;
 
+  // Get exercise details text
+  const getExerciseDetails = (exercise) => {
+    if (!exercise) return '';
+    if (exercise.exerciseType === 'count') {
+      return t('rest.nextExerciseDetails')
+        .replace('{reps}', exercise.parameters.repsPerSet)
+        .replace('{sets}', exercise.parameters.sets);
+    }
+    return t('rest.nextExerciseDuration')
+      .replace('{duration}', exercise.parameters.durationSeconds)
+      .replace('{sets}', exercise.parameters.sets);
+  };
+
   return (
     <div className="rest-timer">
       <div className="rest-content">
         <div className="rest-icon">☕</div>
-        
+
         <h1 className="rest-title">
-          {type === 'set' ? t('rest.betweenSets') : t('rest.betweenExercises')}
+          {type === 'set' || type === 'early' ? t('rest.betweenSets') : t('rest.betweenExercises')}
         </h1>
 
         <div className="countdown-display">
@@ -78,20 +125,30 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
         </div>
 
         <div className="progress-bar">
-          <div 
+          <div
             className="progress-fill"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
         <div className="rest-info">
-          {type === 'set' && (
+          {(type === 'set' || type === 'early') && (
             <p>{t('rest.preparingSet', { current: currentSet, total: totalSets })}</p>
           )}
-          {type === 'exercise' && nextExercise && (
-            <div className="next-exercise">
-              <p>{t('rest.nextExercise')}</p>
+
+          {/* Video preview for next exercise */}
+          {nextExercise && nextExercise.videoSource && (
+            <div className="next-exercise-preview">
+              <p className="preview-label">{t('rest.nextExercise')}</p>
+              <video
+                ref={previewVideoRef}
+                src={nextExercise.videoSource.videoUrl}
+                className="preview-video"
+                muted
+                playsInline
+              />
               <h3>{nextExercise.exerciseName}</h3>
+              <p className="preview-details">{getExerciseDetails(nextExercise)}</p>
             </div>
           )}
         </div>
