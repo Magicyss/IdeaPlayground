@@ -4,7 +4,7 @@
  */
 
 import * as ffmpegService from './ffmpegService.js';
-import { generateRestVideo, formatExerciseDetails } from './restFrameGenerator.js';
+import { generateRestVideo, formatExerciseDetails, generateExerciseOverlayVideo } from './restFrameGenerator.js';
 
 // Export stages
 export const STAGES = {
@@ -149,20 +149,27 @@ export async function exportWorkout(options) {
 
         // Create segment for this set
         const segmentName = `segment_${String(segmentIndex).padStart(4, '0')}.mp4`;
+        const clipDuration = exercise.videoSource.endTime - exercise.videoSource.startTime;
 
         if (exercise.exerciseType === 'count') {
           // Count-based: repeat the clip
           await createCountBasedSegment(
             sourceFileName,
             exercise,
-            segmentName
+            setIndex,
+            segmentName,
+            { width, height, fps },
+            translations
           );
         } else {
           // Duration-based: loop to fill duration
           await createDurationBasedSegment(
             sourceFileName,
             exercise,
-            segmentName
+            setIndex,
+            segmentName,
+            { width, height, fps },
+            translations
           );
         }
 
@@ -290,13 +297,15 @@ export async function exportWorkout(options) {
 }
 
 /**
- * Create a count-based exercise segment (repeat clip for reps)
+ * Create a count-based exercise segment (repeat clip for reps) with overlay
  */
-async function createCountBasedSegment(sourceFile, exercise, outputFile) {
+async function createCountBasedSegment(sourceFile, exercise, setIndex, outputFile, config, translations) {
+  const { width, height, fps } = config;
   const startTime = exercise.videoSource.startTime;
   const endTime = exercise.videoSource.endTime;
   const clipDuration = endTime - startTime;
   const repsPerSet = exercise.parameters.repsPerSet;
+  const totalSets = exercise.parameters.sets;
 
   // First, trim the clip
   const trimmedFile = `trimmed_${Date.now()}.mp4`;
@@ -311,11 +320,11 @@ async function createCountBasedSegment(sourceFile, exercise, outputFile) {
   ]);
 
   // Loop the clip for the number of reps
-  // Each clip play represents one rep
+  const loopedFile = `looped_${Date.now()}.mp4`;
   if (repsPerSet <= 1) {
     // No looping needed
     const data = await ffmpegService.readFile(trimmedFile);
-    await ffmpegService.writeFile(outputFile, data);
+    await ffmpegService.writeFile(loopedFile, data);
   } else {
     // Loop the video using stream_loop
     await ffmpegService.exec([
@@ -324,21 +333,51 @@ async function createCountBasedSegment(sourceFile, exercise, outputFile) {
       '-c:v', 'libx264',
       '-c:a', 'aac',
       '-y',
-      outputFile,
+      loopedFile,
     ]);
   }
 
   await ffmpegService.deleteFile(trimmedFile);
+
+  // Generate overlay video
+  const overlayPrefix = `overlay_${Date.now()}`;
+  const { overlayFile } = await generateExerciseOverlayVideo({
+    exercise,
+    setIndex,
+    clipDuration,
+    width,
+    height,
+    fps,
+    outputPrefix: overlayPrefix,
+  }, translations);
+
+  // Composite overlay onto video
+  await ffmpegService.exec([
+    '-i', loopedFile,
+    '-i', overlayFile,
+    '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=1[outv]',
+    '-map', '[outv]',
+    '-map', '0:a?',
+    '-c:v', 'libx264',
+    '-c:a', 'aac',
+    '-y',
+    outputFile,
+  ]);
+
+  await ffmpegService.deleteFile(loopedFile);
+  await ffmpegService.deleteFile(overlayFile);
 }
 
 /**
- * Create a duration-based exercise segment (loop to fill duration)
+ * Create a duration-based exercise segment (loop to fill duration) with overlay
  */
-async function createDurationBasedSegment(sourceFile, exercise, outputFile) {
+async function createDurationBasedSegment(sourceFile, exercise, setIndex, outputFile, config, translations) {
+  const { width, height, fps } = config;
   const startTime = exercise.videoSource.startTime;
   const endTime = exercise.videoSource.endTime;
   const clipDuration = endTime - startTime;
   const targetDuration = exercise.parameters.durationSeconds;
+  const totalSets = exercise.parameters.sets;
 
   // Calculate how many times to loop
   const loopCount = Math.ceil(targetDuration / clipDuration);
@@ -355,6 +394,7 @@ async function createDurationBasedSegment(sourceFile, exercise, outputFile) {
     trimmedFile,
   ]);
 
+  const loopedFile = `looped_${Date.now()}.mp4`;
   if (loopCount <= 1) {
     // No looping needed, just trim to target duration
     await ffmpegService.exec([
@@ -362,7 +402,7 @@ async function createDurationBasedSegment(sourceFile, exercise, outputFile) {
       '-t', String(targetDuration),
       '-c', 'copy',
       '-y',
-      outputFile,
+      loopedFile,
     ]);
   } else {
     // Loop the video using stream_loop
@@ -373,11 +413,39 @@ async function createDurationBasedSegment(sourceFile, exercise, outputFile) {
       '-c:v', 'libx264',
       '-c:a', 'aac',
       '-y',
-      outputFile,
+      loopedFile,
     ]);
   }
 
   await ffmpegService.deleteFile(trimmedFile);
+
+  // Generate overlay video
+  const overlayPrefix = `overlay_${Date.now()}`;
+  const { overlayFile } = await generateExerciseOverlayVideo({
+    exercise,
+    setIndex,
+    clipDuration,
+    width,
+    height,
+    fps,
+    outputPrefix: overlayPrefix,
+  }, translations);
+
+  // Composite overlay onto video
+  await ffmpegService.exec([
+    '-i', loopedFile,
+    '-i', overlayFile,
+    '-filter_complex', '[0:v][1:v]overlay=0:0:shortest=1[outv]',
+    '-map', '[outv]',
+    '-map', '0:a?',
+    '-c:v', 'libx264',
+    '-c:a', 'aac',
+    '-y',
+    outputFile,
+  ]);
+
+  await ffmpegService.deleteFile(loopedFile);
+  await ffmpegService.deleteFile(overlayFile);
 }
 
 /**

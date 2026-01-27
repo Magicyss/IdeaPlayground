@@ -194,17 +194,17 @@ export async function generateRestVideo(options, translations, onProgress = null
   }
 
   // Convert frames to video using FFmpeg
-  // Input: 1 frame per second of countdown
-  // Use -vf fps to duplicate frames to reach target fps while keeping 1 second per frame
+  // Each frame should display for 1 second
+  // Use -r for output framerate and loop_input to hold each frame
   const outputFile = `${outputName}.mp4`;
 
   await ffmpegService.exec([
-    '-framerate', '1', // Input: 1 frame = 1 second of countdown
+    '-framerate', '1',  // Input: 1 frame per second
     '-i', `${outputName}_frame_%04d.png`,
-    '-vf', `fps=${fps}`, // Duplicate frames to target fps (keeps timing correct)
     '-c:v', 'libx264',
+    '-r', String(fps),  // Output framerate
     '-pix_fmt', 'yuv420p',
-    '-t', String(duration),
+    '-vf', `fps=${fps},format=yuv420p`,  // Ensure proper frame duplication
     outputFile,
   ]);
 
@@ -241,7 +241,196 @@ export function formatExerciseDetails(exercise, translations) {
   }
 }
 
+/**
+ * Generate overlay image for exercise video
+ * Shows current rep/duration and set information
+ * @param {Object} options - Generation options
+ * @param {string} options.exerciseName - Exercise name
+ * @param {number} options.currentRep - Current rep number (for count-based)
+ * @param {number} options.totalReps - Total reps (for count-based)
+ * @param {number} options.currentSet - Current set number
+ * @param {number} options.totalSets - Total sets
+ * @param {number} options.remainingSeconds - Remaining seconds (for duration-based)
+ * @param {string} options.exerciseType - 'count' or 'duration'
+ * @param {number} options.width - Video width
+ * @param {number} options.height - Video height
+ * @param {Object} translations - Translation object
+ * @returns {Promise<Uint8Array>} - PNG image data
+ */
+export async function generateOverlayImage(options, translations) {
+  const {
+    exerciseName,
+    currentRep,
+    totalReps,
+    currentSet,
+    totalSets,
+    remainingSeconds,
+    exerciseType,
+    width = 1920,
+    height = 1080,
+  } = options;
+
+  const t = translations?.t || ((key) => key);
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  // Clear canvas (transparent)
+  ctx.clearRect(0, 0, width, height);
+
+  const fonts = getFontSizes(height);
+
+  // Semi-transparent background bar at top
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.fillRect(0, 0, width, height * 0.12);
+
+  // Exercise name (top left)
+  ctx.fillStyle = COLORS.text;
+  ctx.font = `bold ${fonts.nextName}px Arial, sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(exerciseName, width * 0.03, height * 0.06);
+
+  // Set info (top right)
+  ctx.textAlign = 'right';
+  ctx.font = `bold ${fonts.nextLabel}px Arial, sans-serif`;
+  const setText = t('overlay.set')
+    .replace('{current}', currentSet)
+    .replace('{total}', totalSets);
+  ctx.fillText(setText, width * 0.97, height * 0.06);
+
+  // Rep/Duration info (bottom center, with background)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  const bottomBarHeight = height * 0.1;
+  ctx.fillRect(0, height - bottomBarHeight, width, bottomBarHeight);
+
+  ctx.fillStyle = COLORS.highlight;
+  ctx.font = `bold ${fonts.countdown * 0.4}px Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (exerciseType === 'count') {
+    const repText = t('overlay.rep')
+      .replace('{current}', currentRep)
+      .replace('{total}', totalReps);
+    ctx.fillText(repText, width / 2, height - bottomBarHeight / 2);
+  } else {
+    const durationText = t('overlay.duration')
+      .replace('{seconds}', remainingSeconds);
+    ctx.fillText(durationText, width / 2, height - bottomBarHeight / 2);
+  }
+
+  const blob = await canvasToBlob(canvas);
+  const arrayBuffer = await blob.arrayBuffer();
+  return new Uint8Array(arrayBuffer);
+}
+
+/**
+ * Generate all overlay frames for an exercise segment
+ * Optimized: generates 1 frame per second, FFmpeg will duplicate to target fps
+ * @param {Object} options - Generation options
+ * @param {Object} options.exercise - Exercise object
+ * @param {number} options.setIndex - Current set index (0-based)
+ * @param {number} options.clipDuration - Duration of one clip in seconds
+ * @param {number} options.width - Video width
+ * @param {number} options.height - Video height
+ * @param {number} options.fps - Frame rate
+ * @param {string} options.outputPrefix - Output filename prefix
+ * @param {Object} translations - Translation object
+ * @returns {Promise<{overlayFile: string, duration: number}>}
+ */
+export async function generateExerciseOverlayVideo(options, translations) {
+  const {
+    exercise,
+    setIndex,
+    clipDuration,
+    width = 1920,
+    height = 1080,
+    fps = 30,
+    outputPrefix = 'overlay',
+  } = options;
+
+  const t = translations?.t || ((key) => key);
+  const isCountBased = exercise.exerciseType === 'count';
+  const repsPerSet = exercise.parameters.repsPerSet;
+  const totalSets = exercise.parameters.sets;
+  const durationSeconds = exercise.parameters.durationSeconds;
+
+  let totalDuration;
+
+  if (isCountBased) {
+    // Count-based: clip plays once per rep
+    totalDuration = clipDuration * repsPerSet;
+  } else {
+    // Duration-based: loop to fill duration
+    totalDuration = durationSeconds;
+  }
+
+  // Generate 1 frame per second (optimized)
+  const frameCount = Math.ceil(totalDuration);
+
+  for (let second = 0; second < frameCount; second++) {
+    const currentTime = second;
+
+    let overlayOptions;
+    if (isCountBased) {
+      // Calculate current rep based on time
+      const currentRep = Math.min(
+        Math.floor(currentTime / clipDuration) + 1,
+        repsPerSet
+      );
+      overlayOptions = {
+        exerciseName: exercise.exerciseName,
+        currentRep,
+        totalReps: repsPerSet,
+        currentSet: setIndex + 1,
+        totalSets,
+        exerciseType: 'count',
+        width,
+        height,
+      };
+    } else {
+      // Duration-based: show remaining time
+      const remainingSeconds = Math.max(0, Math.ceil(durationSeconds - currentTime));
+      overlayOptions = {
+        exerciseName: exercise.exerciseName,
+        currentSet: setIndex + 1,
+        totalSets,
+        remainingSeconds,
+        exerciseType: 'duration',
+        width,
+        height,
+      };
+    }
+
+    const overlayData = await generateOverlayImage(overlayOptions, translations);
+    const frameName = `${outputPrefix}_frame_${String(second).padStart(4, '0')}.png`;
+    await ffmpegService.writeFile(frameName, overlayData);
+  }
+
+  // Convert frames to video - 1 frame per second input, output at target fps
+  const overlayFile = `${outputPrefix}.mov`;
+
+  await ffmpegService.exec([
+    '-framerate', '1',  // Input: 1 frame per second
+    '-i', `${outputPrefix}_frame_%04d.png`,
+    '-c:v', 'png',
+    '-r', String(fps),  // Output at target fps
+    '-pix_fmt', 'rgba',
+    overlayFile,
+  ]);
+
+  // Cleanup frame files
+  for (let second = 0; second < frameCount; second++) {
+    const frameName = `${outputPrefix}_frame_${String(second).padStart(4, '0')}.png`;
+    await ffmpegService.deleteFile(frameName);
+  }
+
+  return { overlayFile, duration: totalDuration };
+}
+
 export default {
   generateRestVideo,
   formatExerciseDetails,
+  generateOverlayImage,
+  generateExerciseOverlayVideo,
 };

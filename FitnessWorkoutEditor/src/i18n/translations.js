@@ -156,6 +156,11 @@ export const translations = {
     "export.browserNotSupported": "您的浏览器不支持此功能",
     "export.estimatedDuration": "预计时长",
 
+    // Video Overlay
+    "overlay.rep": "第 {current} 次 / 共 {total} 次",
+    "overlay.set": "第 {current} 组 / 共 {total} 组",
+    "overlay.duration": "剩余 {seconds} 秒",
+
     // Common
     "common.of": "/",
     "common.total": "共",
@@ -326,6 +331,11 @@ export const translations = {
     "export.error": "Export Failed",
     "export.browserNotSupported": "Your browser does not support this feature",
     "export.estimatedDuration": "Estimated Duration",
+
+    // Video Overlay
+    "overlay.rep": "Rep {current} / {total}",
+    "overlay.set": "Set {current} / {total}",
+    "overlay.duration": "{seconds}s remaining",
 
     // Common
     "common.of": "/",
