@@ -40,8 +40,18 @@ function VideoImporter() {
           duration: video.duration,
           size: file.size,
         };
-        
+
         dispatch({ type: ACTIONS.ADD_VIDEO, payload: videoData });
+
+        // Link this video to any imported exercises that match by filename
+        dispatch({
+          type: ACTIONS.LINK_VIDEO_TO_EXERCISES,
+          payload: {
+            videoId: videoData.id,
+            videoUrl: videoData.url,
+            fileName: videoData.fileName,
+          },
+        });
         // Don't revoke the URL here - it's needed for video playback
       };
       

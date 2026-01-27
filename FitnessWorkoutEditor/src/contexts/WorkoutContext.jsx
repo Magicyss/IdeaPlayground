@@ -15,6 +15,8 @@ const ACTIONS = {
   SET_WORKOUT_NAME: 'SET_WORKOUT_NAME',
   LOAD_WORKOUT: 'LOAD_WORKOUT',
   CLEAR_WORKOUT: 'CLEAR_WORKOUT',
+  IMPORT_WORKOUT: 'IMPORT_WORKOUT',
+  LINK_VIDEO_TO_EXERCISES: 'LINK_VIDEO_TO_EXERCISES',
 };
 
 // Initial state
@@ -67,10 +69,38 @@ function workoutReducer(state, action) {
     
     case ACTIONS.LOAD_WORKOUT:
       return { ...state, ...action.payload };
-    
+
+    case ACTIONS.IMPORT_WORKOUT:
+      // Import workout: load exercises and workoutName, keep videos empty (need re-import)
+      return {
+        ...initialState,
+        workoutName: action.payload.workoutName || initialState.workoutName,
+        exercises: action.payload.exercises || [],
+      };
+
     case ACTIONS.CLEAR_WORKOUT:
       return initialState;
-    
+
+    case ACTIONS.LINK_VIDEO_TO_EXERCISES:
+      // Update exercises that match the video by filename
+      // payload: { videoId, videoUrl, fileName }
+      return {
+        ...state,
+        exercises: state.exercises.map(ex => {
+          if (ex.videoSource?.fileName === action.payload.fileName) {
+            return {
+              ...ex,
+              videoSource: {
+                ...ex.videoSource,
+                videoId: action.payload.videoId,
+                videoUrl: action.payload.videoUrl,
+              },
+            };
+          }
+          return ex;
+        }),
+      };
+
     default:
       return state;
   }
@@ -80,19 +110,9 @@ function workoutReducer(state, action) {
 export function WorkoutProvider({ children }) {
   const [state, dispatch] = useReducer(workoutReducer, initialState);
 
-  // Load saved workout from localStorage on mount
+  // Load saved draft from localStorage on mount
   useEffect(() => {
     try {
-      // First check if there's an imported workout
-      const importedWorkout = localStorage.getItem('importedWorkout');
-      if (importedWorkout) {
-        const data = JSON.parse(importedWorkout);
-        dispatch({ type: ACTIONS.LOAD_WORKOUT, payload: data });
-        localStorage.removeItem('importedWorkout'); // Clear after loading
-        return;
-      }
-
-      // Otherwise, load the draft
       const savedDraft = localStorage.getItem('workoutDraft');
       if (savedDraft) {
         const draft = JSON.parse(savedDraft);
