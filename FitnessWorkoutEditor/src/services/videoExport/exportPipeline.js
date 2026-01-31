@@ -137,6 +137,12 @@ export async function exportWorkout(options) {
         throw new Error(`Video not found for exercise: ${exercise.exerciseName}`);
       }
 
+      // Get source video dimensions for overlay positioning
+      const sourceVideoDimensions = {
+        sourceWidth: videoInfo.width,
+        sourceHeight: videoInfo.height,
+      };
+
       // Write source video to FFmpeg filesystem
       const sourceFileName = `source_${exIndex}.mp4`;
       await ffmpegService.writeFile(sourceFileName, videoInfo.file);
@@ -159,7 +165,8 @@ export async function exportWorkout(options) {
             setIndex,
             segmentName,
             { width, height, fps },
-            translations
+            translations,
+            sourceVideoDimensions
           );
         } else {
           // Duration-based: loop to fill duration
@@ -169,7 +176,8 @@ export async function exportWorkout(options) {
             setIndex,
             segmentName,
             { width, height, fps },
-            translations
+            translations,
+            sourceVideoDimensions
           );
         }
 
@@ -299,8 +307,9 @@ export async function exportWorkout(options) {
 /**
  * Create a count-based exercise segment (repeat clip for reps) with overlay
  */
-async function createCountBasedSegment(sourceFile, exercise, setIndex, outputFile, config, translations) {
+async function createCountBasedSegment(sourceFile, exercise, setIndex, outputFile, config, translations, sourceVideoDimensions) {
   const { width, height, fps } = config;
+  const { sourceWidth, sourceHeight } = sourceVideoDimensions || {};
   const startTime = exercise.videoSource.startTime;
   const endTime = exercise.videoSource.endTime;
   const clipDuration = endTime - startTime;
@@ -347,6 +356,8 @@ async function createCountBasedSegment(sourceFile, exercise, setIndex, outputFil
     clipDuration,
     width,
     height,
+    sourceWidth,
+    sourceHeight,
     fps,
     outputPrefix: overlayPrefix,
   }, translations);
@@ -371,8 +382,9 @@ async function createCountBasedSegment(sourceFile, exercise, setIndex, outputFil
 /**
  * Create a duration-based exercise segment (loop to fill duration) with overlay
  */
-async function createDurationBasedSegment(sourceFile, exercise, setIndex, outputFile, config, translations) {
+async function createDurationBasedSegment(sourceFile, exercise, setIndex, outputFile, config, translations, sourceVideoDimensions) {
   const { width, height, fps } = config;
+  const { sourceWidth, sourceHeight } = sourceVideoDimensions || {};
   const startTime = exercise.videoSource.startTime;
   const endTime = exercise.videoSource.endTime;
   const clipDuration = endTime - startTime;
@@ -427,6 +439,8 @@ async function createDurationBasedSegment(sourceFile, exercise, setIndex, output
     clipDuration,
     width,
     height,
+    sourceWidth,
+    sourceHeight,
     fps,
     outputPrefix: overlayPrefix,
   }, translations);

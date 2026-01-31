@@ -165,11 +165,13 @@ export async function generateRestVideo(options, translations, onProgress = null
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  // Generate frames (1 frame per second for countdown)
-  const frameCount = duration;
+  // Generate fps frames per second to ensure correct timing
+  // Each countdown second needs fps frames
+  const totalFrames = duration * fps;
+  let frameIndex = 0;
 
-  for (let i = 0; i < frameCount; i++) {
-    const countdown = duration - i;
+  for (let second = 0; second < duration; second++) {
+    const countdown = duration - second;
 
     renderRestFrame(ctx, width, height, {
       countdown,
@@ -184,38 +186,38 @@ export async function generateRestVideo(options, translations, onProgress = null
     const arrayBuffer = await blob.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Write frame to FFmpeg filesystem with 4-digit padding
-    const frameName = `${outputName}_frame_${String(i).padStart(4, '0')}.png`;
-    await ffmpegService.writeFile(frameName, uint8Array);
+    // Write fps copies of this frame (one for each frame in this second)
+    for (let f = 0; f < fps; f++) {
+      const frameName = `${outputName}_frame_${String(frameIndex).padStart(6, '0')}.png`;
+      await ffmpegService.writeFile(frameName, uint8Array);
+      frameIndex++;
+    }
 
     if (onProgress) {
-      onProgress({ frame: i + 1, totalFrames: frameCount, phase: 'generating' });
+      onProgress({ frame: second + 1, totalFrames: duration, phase: 'generating' });
     }
   }
 
-  // Convert frames to video using FFmpeg
-  // Each frame should display for 1 second
-  // Use -r for output framerate and loop_input to hold each frame
+  // Convert frames to video using FFmpeg at target fps
   const outputFile = `${outputName}.mp4`;
 
   await ffmpegService.exec([
-    '-framerate', '1',  // Input: 1 frame per second
-    '-i', `${outputName}_frame_%04d.png`,
+    '-framerate', String(fps),
+    '-i', `${outputName}_frame_%06d.png`,
     '-c:v', 'libx264',
-    '-r', String(fps),  // Output framerate
     '-pix_fmt', 'yuv420p',
-    '-vf', `fps=${fps},format=yuv420p`,  // Ensure proper frame duplication
+    '-y',
     outputFile,
   ]);
 
   // Cleanup frame files
-  for (let i = 0; i < frameCount; i++) {
-    const frameName = `${outputName}_frame_${String(i).padStart(4, '0')}.png`;
+  for (let i = 0; i < totalFrames; i++) {
+    const frameName = `${outputName}_frame_${String(i).padStart(6, '0')}.png`;
     await ffmpegService.deleteFile(frameName);
   }
 
   if (onProgress) {
-    onProgress({ frame: frameCount, totalFrames: frameCount, phase: 'complete' });
+    onProgress({ frame: duration, totalFrames: duration, phase: 'complete' });
   }
 
   return outputFile;
@@ -244,6 +246,7 @@ export function formatExerciseDetails(exercise, translations) {
 /**
  * Generate overlay image for exercise video
  * Shows current rep/duration and set information
+ * Handles portrait videos padded to landscape by calculating content area
  * @param {Object} options - Generation options
  * @param {string} options.exerciseName - Exercise name
  * @param {number} options.currentRep - Current rep number (for count-based)
@@ -252,8 +255,10 @@ export function formatExerciseDetails(exercise, translations) {
  * @param {number} options.totalSets - Total sets
  * @param {number} options.remainingSeconds - Remaining seconds (for duration-based)
  * @param {string} options.exerciseType - 'count' or 'duration'
- * @param {number} options.width - Video width
- * @param {number} options.height - Video height
+ * @param {number} options.width - Output video width
+ * @param {number} options.height - Output video height
+ * @param {number} options.sourceWidth - Source video width (before padding)
+ * @param {number} options.sourceHeight - Source video height (before padding)
  * @param {Object} translations - Translation object
  * @returns {Promise<Uint8Array>} - PNG image data
  */
@@ -268,6 +273,8 @@ export async function generateOverlayImage(options, translations) {
     exerciseType,
     width = 1920,
     height = 1080,
+    sourceWidth,
+    sourceHeight,
   } = options;
 
   const t = translations?.t || ((key) => key);
@@ -277,31 +284,59 @@ export async function generateOverlayImage(options, translations) {
   // Clear canvas (transparent)
   ctx.clearRect(0, 0, width, height);
 
+  // Calculate content area (where the actual video is after padding)
+  // This matches FFmpeg's scale+pad behavior: force_original_aspect_ratio=decrease,pad
+  let contentX = 0;
+  let contentY = 0;
+  let contentWidth = width;
+  let contentHeight = height;
+
+  if (sourceWidth && sourceHeight) {
+    // Calculate scaled dimensions maintaining aspect ratio
+    const sourceAspect = sourceWidth / sourceHeight;
+    const targetAspect = width / height;
+
+    if (sourceAspect > targetAspect) {
+      // Source is wider - pillarbox (black bars top/bottom)
+      contentWidth = width;
+      contentHeight = Math.round(width / sourceAspect);
+      contentX = 0;
+      contentY = Math.round((height - contentHeight) / 2);
+    } else {
+      // Source is taller - letterbox (black bars left/right)
+      contentHeight = height;
+      contentWidth = Math.round(height * sourceAspect);
+      contentX = Math.round((width - contentWidth) / 2);
+      contentY = 0;
+    }
+  }
+
   const fonts = getFontSizes(height);
 
-  // Semi-transparent background bar at top
+  // Semi-transparent background bar at top (only within content area)
   ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-  ctx.fillRect(0, 0, width, height * 0.12);
+  const topBarHeight = contentHeight * 0.12;
+  ctx.fillRect(contentX, contentY, contentWidth, topBarHeight);
 
-  // Exercise name (top left)
+  // Exercise name (top left of content area)
   ctx.fillStyle = COLORS.text;
   ctx.font = `bold ${fonts.nextName}px Arial, sans-serif`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText(exerciseName, width * 0.03, height * 0.06);
+  ctx.fillText(exerciseName, contentX + contentWidth * 0.03, contentY + topBarHeight / 2);
 
-  // Set info (top right)
+  // Set info (top right of content area)
   ctx.textAlign = 'right';
   ctx.font = `bold ${fonts.nextLabel}px Arial, sans-serif`;
   const setText = t('overlay.set')
     .replace('{current}', currentSet)
     .replace('{total}', totalSets);
-  ctx.fillText(setText, width * 0.97, height * 0.06);
+  ctx.fillText(setText, contentX + contentWidth * 0.97, contentY + topBarHeight / 2);
 
-  // Rep/Duration info (bottom center, with background)
+  // Rep/Duration info (bottom center of content area, with background)
   ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-  const bottomBarHeight = height * 0.1;
-  ctx.fillRect(0, height - bottomBarHeight, width, bottomBarHeight);
+  const bottomBarHeight = contentHeight * 0.1;
+  ctx.fillRect(contentX, contentY + contentHeight - bottomBarHeight, contentWidth, bottomBarHeight);
 
   ctx.fillStyle = COLORS.highlight;
   ctx.font = `bold ${fonts.countdown * 0.4}px Arial, sans-serif`;
@@ -312,11 +347,11 @@ export async function generateOverlayImage(options, translations) {
     const repText = t('overlay.rep')
       .replace('{current}', currentRep)
       .replace('{total}', totalReps);
-    ctx.fillText(repText, width / 2, height - bottomBarHeight / 2);
+    ctx.fillText(repText, contentX + contentWidth / 2, contentY + contentHeight - bottomBarHeight / 2);
   } else {
     const durationText = t('overlay.duration')
       .replace('{seconds}', remainingSeconds);
-    ctx.fillText(durationText, width / 2, height - bottomBarHeight / 2);
+    ctx.fillText(durationText, contentX + contentWidth / 2, contentY + contentHeight - bottomBarHeight / 2);
   }
 
   const blob = await canvasToBlob(canvas);
@@ -326,13 +361,15 @@ export async function generateOverlayImage(options, translations) {
 
 /**
  * Generate all overlay frames for an exercise segment
- * Optimized: generates 1 frame per second, FFmpeg will duplicate to target fps
+ * Generates fps frames per second for correct timing
  * @param {Object} options - Generation options
  * @param {Object} options.exercise - Exercise object
  * @param {number} options.setIndex - Current set index (0-based)
  * @param {number} options.clipDuration - Duration of one clip in seconds
- * @param {number} options.width - Video width
- * @param {number} options.height - Video height
+ * @param {number} options.width - Output video width
+ * @param {number} options.height - Output video height
+ * @param {number} options.sourceWidth - Source video width (before padding)
+ * @param {number} options.sourceHeight - Source video height (before padding)
  * @param {number} options.fps - Frame rate
  * @param {string} options.outputPrefix - Output filename prefix
  * @param {Object} translations - Translation object
@@ -345,6 +382,8 @@ export async function generateExerciseOverlayVideo(options, translations) {
     clipDuration,
     width = 1920,
     height = 1080,
+    sourceWidth,
+    sourceHeight,
     fps = 30,
     outputPrefix = 'overlay',
   } = options;
@@ -365,10 +404,11 @@ export async function generateExerciseOverlayVideo(options, translations) {
     totalDuration = durationSeconds;
   }
 
-  // Generate 1 frame per second (optimized)
-  const frameCount = Math.ceil(totalDuration);
+  // Generate fps frames per second for correct timing
+  const totalFrames = Math.ceil(totalDuration) * fps;
+  let frameIndex = 0;
 
-  for (let second = 0; second < frameCount; second++) {
+  for (let second = 0; second < Math.ceil(totalDuration); second++) {
     const currentTime = second;
 
     let overlayOptions;
@@ -387,6 +427,8 @@ export async function generateExerciseOverlayVideo(options, translations) {
         exerciseType: 'count',
         width,
         height,
+        sourceWidth,
+        sourceHeight,
       };
     } else {
       // Duration-based: show remaining time
@@ -399,29 +441,36 @@ export async function generateExerciseOverlayVideo(options, translations) {
         exerciseType: 'duration',
         width,
         height,
+        sourceWidth,
+        sourceHeight,
       };
     }
 
     const overlayData = await generateOverlayImage(overlayOptions, translations);
-    const frameName = `${outputPrefix}_frame_${String(second).padStart(4, '0')}.png`;
-    await ffmpegService.writeFile(frameName, overlayData);
+
+    // Write fps copies of this frame (one for each frame in this second)
+    for (let f = 0; f < fps; f++) {
+      const frameName = `${outputPrefix}_frame_${String(frameIndex).padStart(6, '0')}.png`;
+      await ffmpegService.writeFile(frameName, overlayData);
+      frameIndex++;
+    }
   }
 
-  // Convert frames to video - 1 frame per second input, output at target fps
+  // Convert frames to video at target fps with alpha channel
   const overlayFile = `${outputPrefix}.mov`;
 
   await ffmpegService.exec([
-    '-framerate', '1',  // Input: 1 frame per second
-    '-i', `${outputPrefix}_frame_%04d.png`,
+    '-framerate', String(fps),
+    '-i', `${outputPrefix}_frame_%06d.png`,
     '-c:v', 'png',
-    '-r', String(fps),  // Output at target fps
     '-pix_fmt', 'rgba',
+    '-y',
     overlayFile,
   ]);
 
   // Cleanup frame files
-  for (let second = 0; second < frameCount; second++) {
-    const frameName = `${outputPrefix}_frame_${String(second).padStart(4, '0')}.png`;
+  for (let i = 0; i < totalFrames; i++) {
+    const frameName = `${outputPrefix}_frame_${String(i).padStart(6, '0')}.png`;
     await ffmpegService.deleteFile(frameName);
   }
 
