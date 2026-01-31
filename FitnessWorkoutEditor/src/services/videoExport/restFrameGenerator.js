@@ -184,11 +184,12 @@ export async function generateRestVideo(options, translations, onProgress = null
 
     const blob = await canvasToBlob(canvas);
     const arrayBuffer = await blob.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
 
     // Write fps copies of this frame (one for each frame in this second)
+    // Need to create a new Uint8Array copy for each write because the buffer gets detached
     for (let f = 0; f < fps; f++) {
       const frameName = `${outputName}_frame_${String(frameIndex).padStart(6, '0')}.png`;
+      const uint8Array = new Uint8Array(arrayBuffer.slice(0));
       await ffmpegService.writeFile(frameName, uint8Array);
       frameIndex++;
     }
@@ -449,9 +450,11 @@ export async function generateExerciseOverlayVideo(options, translations) {
     const overlayData = await generateOverlayImage(overlayOptions, translations);
 
     // Write fps copies of this frame (one for each frame in this second)
+    // Need to create a new Uint8Array copy for each write because the buffer gets detached
     for (let f = 0; f < fps; f++) {
       const frameName = `${outputPrefix}_frame_${String(frameIndex).padStart(6, '0')}.png`;
-      await ffmpegService.writeFile(frameName, overlayData);
+      const frameData = new Uint8Array(overlayData.buffer.slice(0));
+      await ffmpegService.writeFile(frameName, frameData);
       frameIndex++;
     }
   }
