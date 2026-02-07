@@ -10,6 +10,10 @@ import { createProcessor } from '../processing/processorFactory.js';
 import { createMp4Muxer } from '../muxing/mp4Muxer.js';
 import { createOverlayRenderer } from '../rendering/overlayRenderer.js';
 import { createRestFrameRenderer, formatExerciseDetails } from '../rendering/restFrameRenderer.js';
+import { generateCountdownBeeps } from '../audio/soundEffects.js';
+import { mixAudioBuffers } from '../audio/audioMixer.js';
+import { extractAudioFromVideo } from '../audio/audioDecoder.js';
+import { createAudioEncoder, isAudioEncodingSupported } from '../audio/audioEncoder.js';
 
 // Export stages
 export const STAGES = {
@@ -25,6 +29,10 @@ export const RESOLUTIONS = {
   '720p': { width: 1280, height: 720 },
   '1080p': { width: 1920, height: 1080 },
   '4k': { width: 3840, height: 2160 },
+  // Portrait resolutions
+  '720p-portrait': { width: 720, height: 1280 },
+  '1080p-portrait': { width: 1080, height: 1920 },
+  '4k-portrait': { width: 2160, height: 3840 },
 };
 
 // Frame rate presets
@@ -75,6 +83,8 @@ export async function exportWorkout(options) {
     includeRest = true,
     resolution = '1080p',
     frameRate = '30',
+    includeOriginalAudio = false,
+    includeCountdownBeeps = true,
     translations,
     onProgress,
     signal,
@@ -88,6 +98,10 @@ export async function exportWorkout(options) {
   const { width, height } = resolutionConfig;
   const fps = FRAME_RATES[frameRate] || 30;
   const frameDuration = Math.round(1_000_000 / fps);
+  const sampleRate = 44100;
+  const numberOfChannels = 2;
+
+  const includeAudio = includeOriginalAudio || includeCountdownBeeps;
 
   const reportProgress = (stage, detail = {}) => {
     if (onProgress) {
@@ -115,8 +129,25 @@ export async function exportWorkout(options) {
     const overlayRenderer = createOverlayRenderer(width, height);
     const restFrameRenderer = createRestFrameRenderer(width, height);
 
-    const muxer = createMp4Muxer({ width, height, fps });
+    const muxer = createMp4Muxer({
+      width,
+      height,
+      fps,
+      includeAudio,
+      sampleRate,
+      numberOfChannels,
+    });
 
+    // Prepare countdown beeps if needed
+    let countdownBeeps = null;
+    if (includeCountdownBeeps) {
+      countdownBeeps = await generateCountdownBeeps({ sampleRate });
+    }
+
+    // Track audio sources for mixing later
+    const audioSources = [];
+
+    let encoderError = null;
     const encoder = await createVideoEncoder({
       width,
       height,
@@ -126,16 +157,40 @@ export async function exportWorkout(options) {
         muxer.addVideoChunk(chunk, metadata);
       },
       onError: (error) => {
-        throw error;
+        // Store error to check after encoding
+        encoderError = error;
       },
     });
     cleanupResources.push(() => encoder.close());
+
+    const checkEncoderError = () => {
+      if (encoderError) {
+        throw encoderError;
+      }
+    };
 
     checkAborted();
 
     reportProgress(STAGES.PROCESSING, { message: 'Processing videos...' });
 
+    // Pre-extract audio from all source videos if needed
+    const videoAudioCache = new Map();
+    if (includeOriginalAudio) {
+      reportProgress(STAGES.PROCESSING, { message: 'Extracting audio...' });
+      for (const video of videos) {
+        if (video.file) {
+          try {
+            const audioBuffer = await extractAudioFromVideo(video.file);
+            videoAudioCache.set(video.id, audioBuffer);
+          } catch (e) {
+            console.warn(`[ExportPipeline] Could not extract audio from video ${video.id}:`, e);
+          }
+        }
+      }
+    }
+
     let currentTimestamp = 0;
+    let currentTimeSeconds = 0; // Track time in seconds for audio
     let totalFrames = 0;
     const totalDuration = calculateTotalDuration(exercises, includeRest);
     const estimatedTotalFrames = Math.ceil(totalDuration * fps);
@@ -233,15 +288,34 @@ export async function exportWorkout(options) {
           const isKeyFrame = frameIndex % (fps * 2) === 0;
           encoder.encode(finalFrame, { keyFrame: isKeyFrame });
           finalFrame.close();
+          checkEncoderError();
 
           totalFrames++;
         }
 
         currentTimestamp += Math.round(segmentDuration * 1_000_000);
 
+        // Track audio segment for this exercise segment
+        if (includeOriginalAudio) {
+          const videoAudio = videoAudioCache.get(exercise.videoSource.videoId);
+          if (videoAudio) {
+            audioSources.push({
+              buffer: videoAudio,
+              startTime: currentTimeSeconds,
+              volume: 1,
+              loop: true,
+              duration: segmentDuration,
+              sourceStart: clipStartTime,
+              sourceEnd: clipEndTime,
+            });
+          }
+        }
+        currentTimeSeconds += segmentDuration;
+
         // Rest between sets
         if (includeRest && setIndex < sets - 1 && exercise.parameters.restBetweenSets > 0) {
           const restDuration = exercise.parameters.restBetweenSets;
+          const restStartTime = currentTimeSeconds;
 
           for (let second = 0; second < restDuration; second++) {
             for (let subFrame = 0; subFrame < fps; subFrame++) {
@@ -265,12 +339,35 @@ export async function exportWorkout(options) {
               const isKeyFrame = (second * fps + subFrame) % (fps * 2) === 0;
               encoder.encode(restFrame, { keyFrame: isKeyFrame });
               restFrame.close();
+              checkEncoderError();
 
               totalFrames++;
             }
           }
 
+          // Add countdown beeps for rest between sets
+          if (includeCountdownBeeps && countdownBeeps) {
+            const { countdownBeep, startBeep, countdownSeconds } = countdownBeeps;
+            const restEndTime = restStartTime + restDuration;
+            for (let i = countdownSeconds; i >= 1; i--) {
+              const beepTime = restEndTime - i;
+              if (beepTime >= restStartTime) {
+                audioSources.push({
+                  buffer: countdownBeep,
+                  startTime: beepTime,
+                  volume: 0.6,
+                });
+              }
+            }
+            audioSources.push({
+              buffer: startBeep,
+              startTime: restEndTime,
+              volume: 0.7,
+            });
+          }
+
           currentTimestamp += Math.round(restDuration * 1_000_000);
+          currentTimeSeconds += restDuration;
         }
       }
 
@@ -278,6 +375,7 @@ export async function exportWorkout(options) {
       if (includeRest && exIndex < exercises.length - 1 && exercise.restAfterExercise > 0) {
         const restDuration = exercise.restAfterExercise;
         const nextExercise = exercises[exIndex + 1];
+        const restStartTime = currentTimeSeconds;
 
         for (let second = 0; second < restDuration; second++) {
           for (let subFrame = 0; subFrame < fps; subFrame++) {
@@ -299,12 +397,35 @@ export async function exportWorkout(options) {
             const isKeyFrame = (second * fps + subFrame) % (fps * 2) === 0;
             encoder.encode(restFrame, { keyFrame: isKeyFrame });
             restFrame.close();
+            checkEncoderError();
 
             totalFrames++;
           }
         }
 
+        // Add countdown beeps for rest between exercises
+        if (includeCountdownBeeps && countdownBeeps) {
+          const { countdownBeep, startBeep, countdownSeconds } = countdownBeeps;
+          const restEndTime = restStartTime + restDuration;
+          for (let i = countdownSeconds; i >= 1; i--) {
+            const beepTime = restEndTime - i;
+            if (beepTime >= restStartTime) {
+              audioSources.push({
+                buffer: countdownBeep,
+                startTime: beepTime,
+                volume: 0.6,
+              });
+            }
+          }
+          audioSources.push({
+            buffer: startBeep,
+            startTime: restEndTime,
+            volume: 0.7,
+          });
+        }
+
         currentTimestamp += Math.round(restDuration * 1_000_000);
+        currentTimeSeconds += restDuration;
       }
 
       reportProgress(STAGES.PROCESSING, {
@@ -320,6 +441,69 @@ export async function exportWorkout(options) {
     reportProgress(STAGES.ENCODING, { message: 'Finalizing video...', progress: 0.8 });
 
     await encoder.flush();
+
+    // Encode audio if needed
+    if (includeAudio && audioSources.length > 0 && isAudioEncodingSupported()) {
+      reportProgress(STAGES.ENCODING, { message: 'Processing audio...', progress: 0.85 });
+
+      try {
+        // Mix all audio sources
+        const mixedAudio = await mixAudioBuffers(audioSources, totalDuration, sampleRate, numberOfChannels);
+
+        // Create audio encoder
+        const audioEncoder = await createAudioEncoder({
+          sampleRate,
+          numberOfChannels,
+          bitrate: 128000,
+          onChunk: (chunk, metadata) => {
+            muxer.addAudioChunk(chunk, metadata);
+          },
+          onError: (error) => {
+            console.warn('[ExportPipeline] Audio encoding error:', error);
+          },
+        });
+
+        if (audioEncoder) {
+          cleanupResources.push(() => audioEncoder.close());
+
+          // Encode audio in chunks
+          const samplesPerChunk = 1024;
+          const totalSamples = mixedAudio.length;
+
+          for (let offset = 0; offset < totalSamples; offset += samplesPerChunk) {
+            checkAborted();
+
+            const chunkSamples = Math.min(samplesPerChunk, totalSamples - offset);
+            const timestamp = Math.round((offset / sampleRate) * 1_000_000);
+
+            // Create interleaved data buffer for AudioData
+            const dataBuffer = new Float32Array(chunkSamples * numberOfChannels);
+            for (let ch = 0; ch < numberOfChannels; ch++) {
+              const channelData = mixedAudio.getChannelData(ch);
+              for (let i = 0; i < chunkSamples; i++) {
+                dataBuffer[ch * chunkSamples + i] = channelData[offset + i] || 0;
+              }
+            }
+
+            const audioData = new AudioData({
+              format: 'f32-planar',
+              sampleRate,
+              numberOfFrames: chunkSamples,
+              numberOfChannels,
+              timestamp,
+              data: dataBuffer,
+            });
+
+            audioEncoder.encode(audioData);
+            audioData.close();
+          }
+
+          await audioEncoder.flush();
+        }
+      } catch (audioError) {
+        console.warn('[ExportPipeline] Audio processing failed, continuing without audio:', audioError);
+      }
+    }
 
     reportProgress(STAGES.ENCODING, { message: 'Creating file...', progress: 0.95 });
 

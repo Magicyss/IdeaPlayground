@@ -75,22 +75,28 @@ export function createOverlayRenderer(width, height) {
 
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       const bottomBarHeight = area.height * 0.1;
-      ctx.fillRect(area.x, area.y + area.height - bottomBarHeight, area.width, bottomBarHeight);
+      const bottomBarY = area.y + area.height - bottomBarHeight;
+      // Ensure the bottom bar doesn't extend beyond the canvas
+      const clippedBottomBarHeight = Math.min(bottomBarHeight, height - bottomBarY);
+      ctx.fillRect(area.x, bottomBarY, area.width, clippedBottomBarHeight);
 
       ctx.fillStyle = COLORS.highlight;
       ctx.font = `bold ${fonts.countdown * 0.4}px Arial, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
+      // Position text in the center of the visible bottom bar
+      const textY = bottomBarY + clippedBottomBarHeight / 2;
+
       if (exerciseType === 'count') {
         const repText = t('overlay.rep')
           .replace('{current}', currentRep)
           .replace('{total}', totalReps);
-        ctx.fillText(repText, area.x + area.width / 2, area.y + area.height - bottomBarHeight / 2);
+        ctx.fillText(repText, area.x + area.width / 2, textY);
       } else {
         const durationText = t('overlay.duration')
           .replace('{seconds}', remainingSeconds);
-        ctx.fillText(durationText, area.x + area.width / 2, area.y + area.height - bottomBarHeight / 2);
+        ctx.fillText(durationText, area.x + area.width / 2, textY);
       }
 
       return canvas;

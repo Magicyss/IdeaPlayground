@@ -21,6 +21,7 @@ export async function createVideoEncoder({
   let encoder = null;
   let frameCount = 0;
   let encoderConfig = null;
+  let isRecreating = false;
 
   encoderConfig = await getBestVideoCodecConfig(width, height, bitrate, framerate);
 
@@ -32,17 +33,47 @@ export async function createVideoEncoder({
 
   const errorHandler = (error) => {
     console.error('[VideoEncoder] Error:', error);
+    // Don't propagate QuotaExceededError - we'll handle it by recreating
+    if (error.name === 'QuotaExceededError') {
+      console.warn('[VideoEncoder] Codec reclaimed, will recreate on next encode');
+      return;
+    }
     if (onError) {
       onError(error);
     }
   };
 
-  encoder = new VideoEncoder({
-    output: chunkHandler,
-    error: errorHandler,
-  });
+  const createEncoder = () => {
+    encoder = new VideoEncoder({
+      output: chunkHandler,
+      error: errorHandler,
+    });
+    encoder.configure(encoderConfig);
+    console.log('[VideoEncoder] Created/recreated encoder');
+  };
 
-  encoder.configure(encoderConfig);
+  // Initial creation
+  createEncoder();
+
+  const ensureEncoder = () => {
+    // If encoder was reclaimed or closed, recreate it
+    if (encoder.state !== 'configured') {
+      if (isRecreating) return;
+      isRecreating = true;
+      try {
+        if (encoder.state !== 'closed') {
+          try {
+            encoder.close();
+          } catch (e) {
+            // Ignore close errors
+          }
+        }
+        createEncoder();
+      } finally {
+        isRecreating = false;
+      }
+    }
+  };
 
   return {
     get config() {
@@ -50,10 +81,24 @@ export async function createVideoEncoder({
     },
 
     encode(frame, options = {}) {
+      ensureEncoder();
       const { keyFrame = false } = options;
+      // Force keyframe on first frame after recreation or every 2 seconds
       const forceKeyFrame = keyFrame || (frameCount % (framerate * 2) === 0);
-      encoder.encode(frame, { keyFrame: forceKeyFrame });
-      frameCount++;
+      try {
+        encoder.encode(frame, { keyFrame: forceKeyFrame });
+        frameCount++;
+      } catch (error) {
+        if (error.name === 'InvalidStateError') {
+          // Encoder was reclaimed between check and encode, recreate and retry
+          console.warn('[VideoEncoder] Encoder reclaimed during encode, recreating...');
+          ensureEncoder();
+          encoder.encode(frame, { keyFrame: true }); // Force keyframe after recreation
+          frameCount++;
+        } else {
+          throw error;
+        }
+      }
     },
 
     async flush() {

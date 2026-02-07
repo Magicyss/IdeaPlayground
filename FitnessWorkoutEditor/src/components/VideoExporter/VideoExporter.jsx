@@ -15,6 +15,9 @@ function VideoExporter({ exercises, videos, workoutName, onClose }) {
     frameRate: '30',
     format: 'mp4',
     includeRest: true,
+    orientation: 'landscape',
+    includeOriginalAudio: false,
+    includeCountdownBeeps: true,
   });
   const [progress, setProgress] = useState({ stage: STAGES.INITIALIZING, message: '' });
   const [outputBlob, setOutputBlob] = useState(null);
@@ -46,6 +49,8 @@ function VideoExporter({ exercises, videos, workoutName, onClose }) {
         includeRest: settings.includeRest,
         resolution: settings.resolution,
         frameRate: settings.frameRate,
+        includeOriginalAudio: settings.includeOriginalAudio,
+        includeCountdownBeeps: settings.includeCountdownBeeps,
         translations,
         onProgress: setProgress,
         signal: abortControllerRef.current.signal,

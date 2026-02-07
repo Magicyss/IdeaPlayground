@@ -8,18 +8,48 @@ function ExportSettings({ exercises, settings, onSettingsChange, onStartExport }
   const minutes = Math.floor(estimatedDuration / 60);
   const seconds = Math.round(estimatedDuration % 60);
 
+  const isPortrait = settings.orientation === 'portrait';
+
+  const getResolutionValue = () => {
+    const base = settings.resolution.replace('-portrait', '');
+    return base;
+  };
+
+  const handleResolutionChange = (baseResolution) => {
+    const newResolution = isPortrait ? `${baseResolution}-portrait` : baseResolution;
+    onSettingsChange({ ...settings, resolution: newResolution });
+  };
+
+  const handleOrientationChange = (orientation) => {
+    const baseResolution = settings.resolution.replace('-portrait', '');
+    const newResolution = orientation === 'portrait' ? `${baseResolution}-portrait` : baseResolution;
+    onSettingsChange({ ...settings, orientation, resolution: newResolution });
+  };
+
   return (
     <div className="export-settings">
+      <div className="setting-group">
+        <label className="setting-label">{t('export.orientation')}</label>
+        <select
+          className="setting-select"
+          value={settings.orientation || 'landscape'}
+          onChange={(e) => handleOrientationChange(e.target.value)}
+        >
+          <option value="landscape">{t('export.landscape')}</option>
+          <option value="portrait">{t('export.portrait')}</option>
+        </select>
+      </div>
+
       <div className="setting-group">
         <label className="setting-label">{t('export.resolution')}</label>
         <select
           className="setting-select"
-          value={settings.resolution}
-          onChange={(e) => onSettingsChange({ ...settings, resolution: e.target.value })}
+          value={getResolutionValue()}
+          onChange={(e) => handleResolutionChange(e.target.value)}
         >
-          <option value="720p">720p (1280×720)</option>
-          <option value="1080p">1080p (1920×1080)</option>
-          <option value="4k">4K (3840×2160)</option>
+          <option value="720p">720p {isPortrait ? '(720×1280)' : '(1280×720)'}</option>
+          <option value="1080p">1080p {isPortrait ? '(1080×1920)' : '(1920×1080)'}</option>
+          <option value="4k">4K {isPortrait ? '(2160×3840)' : '(3840×2160)'}</option>
         </select>
       </div>
 
@@ -55,6 +85,28 @@ function ExportSettings({ exercises, settings, onSettingsChange, onStartExport }
             onChange={(e) => onSettingsChange({ ...settings, includeRest: e.target.checked })}
           />
           <span>{t('export.includeRest')}</span>
+        </label>
+      </div>
+
+      <div className="setting-group checkbox-group">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={settings.includeOriginalAudio ?? false}
+            onChange={(e) => onSettingsChange({ ...settings, includeOriginalAudio: e.target.checked })}
+          />
+          <span>{t('export.includeOriginalAudio')}</span>
+        </label>
+      </div>
+
+      <div className="setting-group checkbox-group">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={settings.includeCountdownBeeps ?? true}
+            onChange={(e) => onSettingsChange({ ...settings, includeCountdownBeeps: e.target.checked })}
+          />
+          <span>{t('export.includeCountdownBeeps')}</span>
         </label>
       </div>
 
