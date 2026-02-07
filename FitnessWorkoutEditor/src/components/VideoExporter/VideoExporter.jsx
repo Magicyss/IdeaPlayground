@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from '../../i18n/I18nContext';
-import { isSupported, terminate } from '../../services/videoExport/ffmpegService';
-import { exportWorkout, STAGES } from '../../services/videoExport/exportPipeline';
+import { isSupported, terminate, exportWorkout, STAGES } from '../../services/videoExport/index.js';
 import ExportSettings from './ExportSettings';
 import ExportProgress from './ExportProgress';
 import './VideoExporter.css';

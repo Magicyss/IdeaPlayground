@@ -1,5 +1,5 @@
 import { useTranslation } from '../../i18n/I18nContext';
-import { calculateTotalDuration } from '../../services/videoExport/exportPipeline';
+import { calculateTotalDuration } from '../../services/videoExport/index.js';
 
 function ExportSettings({ exercises, settings, onSettingsChange, onStartExport }) {
   const { t } = useTranslation();

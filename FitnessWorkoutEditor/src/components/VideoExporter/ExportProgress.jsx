@@ -1,5 +1,5 @@
 import { useTranslation } from '../../i18n/I18nContext';
-import { STAGES } from '../../services/videoExport/exportPipeline';
+import { STAGES } from '../../services/videoExport/index.js';
 
 function ExportProgress({ progress, onCancel }) {
   const { t } = useTranslation();
