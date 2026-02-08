@@ -1,12 +1,15 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useWorkout } from '../../contexts/WorkoutContext';
 import { useTranslation } from '../../i18n/I18nContext';
+import { detectPlatform, parseVideoUrl } from '../../utils/videoPlatform';
 import './VideoImporter.css';
 
 function VideoImporter() {
   const { state, dispatch, ACTIONS } = useWorkout();
   const { t } = useTranslation();
   const fileInputRef = useRef(null);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [isParsing, setIsParsing] = useState(false);
 
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files);
@@ -34,6 +37,7 @@ function VideoImporter() {
       video.onloadedmetadata = () => {
         const videoData = {
           id: Date.now().toString() + Math.random(),
+          type: 'local',
           file,
           fileName: file.name,
           url, // Keep the URL, don't revoke it - we need it for playback
@@ -72,6 +76,51 @@ function VideoImporter() {
     }
   };
 
+  const handleParseUrl = async () => {
+    if (!videoUrl.trim()) {
+      return;
+    }
+
+    setIsParsing(true);
+
+    try {
+      // Parse the video URL
+      const videoInfo = await parseVideoUrl(videoUrl);
+
+      if (!videoInfo.supportsEmbed) {
+        alert(t('video.platformNotSupported'));
+        setIsParsing(false);
+        return;
+      }
+
+      // Create video data object for online video
+      const videoData = {
+        id: Date.now().toString() + Math.random(),
+        type: 'online',
+        fileName: videoInfo.title || `${videoInfo.platformName} Video`,
+        url: videoInfo.embedUrl,
+        originalUrl: videoInfo.originalUrl,
+        duration: videoInfo.duration || 0,
+        platform: videoInfo.platform,
+        platformName: videoInfo.platformName,
+        videoId: videoInfo.videoId,
+        embedUrl: videoInfo.embedUrl,
+        size: 0, // Online videos don't have size info
+      };
+
+      dispatch({ type: ACTIONS.ADD_VIDEO, payload: videoData });
+
+      // Clear the input
+      setVideoUrl('');
+      alert(t('video.parseSuccess'));
+    } catch (error) {
+      console.error('Error parsing video URL:', error);
+      alert(t('video.parseError'));
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -104,6 +153,32 @@ function VideoImporter() {
         <p className="import-hint">
           {t('builder.supportedFormats')}
         </p>
+
+        <div className="url-input-section">
+          <label className="url-label">{t('video.urlInput')}</label>
+          <div className="url-input-group">
+            <input
+              type="text"
+              className="url-input"
+              placeholder={t('video.urlPlaceholder')}
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleParseUrl();
+                }
+              }}
+              disabled={isParsing}
+            />
+            <button
+              className="parse-button"
+              onClick={handleParseUrl}
+              disabled={isParsing || !videoUrl.trim()}
+            >
+              {isParsing ? t('video.parsing') : t('video.parseUrl')}
+            </button>
+          </div>
+        </div>
       </div>
 
       {state.videos.length > 0 && (
@@ -113,10 +188,20 @@ function VideoImporter() {
               <div className="video-info">
                 <div className="video-name">
                   <strong>{video.fileName}</strong>
+                  {video.type && (
+                    <span className={`video-type-badge ${video.type}`}>
+                      {video.type === 'online' ? t('video.online') : t('video.local')}
+                    </span>
+                  )}
                 </div>
                 <div className="video-meta">
                   <span>{t('video.duration')} {formatDuration(video.duration)}</span>
-                  <span>{t('video.size')} {formatFileSize(video.size)}</span>
+                  {video.size > 0 && (
+                    <span>{t('video.size')} {formatFileSize(video.size)}</span>
+                  )}
+                  {video.platformName && (
+                    <span>{video.platformName}</span>
+                  )}
                 </div>
               </div>
               <button

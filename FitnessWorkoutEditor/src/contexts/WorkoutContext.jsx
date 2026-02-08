@@ -22,7 +22,7 @@ const ACTIONS = {
 // Initial state
 const initialState = {
   workoutName: 'My Workout Plan',
-  videos: [], // { id, file, fileName, url, duration }
+  videos: [], // { id, type: 'local'|'online', file?, fileName, url, duration, platform?, videoId?, embedUrl? }
   exercises: [], // Exercise objects
 };
 

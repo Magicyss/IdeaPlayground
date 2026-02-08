@@ -94,6 +94,15 @@ export const translations = {
     "video.remove": "移除此视频？关联的动作也会受到影响。",
     "video.invalidFormat": "不是有效的视频文件",
     "video.tooLarge": "文件过大。请使用小于500MB的视频。",
+    "video.urlInput": "或输入在线视频链接：",
+    "video.urlPlaceholder": "粘贴 Bilibili、YouTube 或其他平台的视频链接",
+    "video.parseUrl": "解析视频",
+    "video.parsing": "解析中...",
+    "video.parseSuccess": "视频解析成功！",
+    "video.parseError": "解析失败，请检查链接是否正确",
+    "video.platformNotSupported": "暂不支持该平台",
+    "video.online": "在线视频",
+    "video.local": "本地视频",
 
     // Workout Player
     "player.exit": "← 退出",
@@ -274,6 +283,15 @@ export const translations = {
       "Remove this video? Associated exercises will also be affected.",
     "video.invalidFormat": "is not a valid video file",
     "video.tooLarge": "is too large. Please use videos smaller than 500MB.",
+    "video.urlInput": "Or enter online video URL:",
+    "video.urlPlaceholder": "Paste video link from Bilibili, YouTube, or other platforms",
+    "video.parseUrl": "Parse Video",
+    "video.parsing": "Parsing...",
+    "video.parseSuccess": "Video parsed successfully!",
+    "video.parseError": "Failed to parse. Please check the URL",
+    "video.platformNotSupported": "Platform not supported yet",
+    "video.online": "Online Video",
+    "video.local": "Local Video",
 
     // Workout Player
     "player.exit": "← Exit",
