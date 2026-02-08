@@ -19,43 +19,43 @@ const PLATFORM_CONFIGS = {
   [PLATFORMS.BILIBILI]: {
     name: 'Bilibili',
     patterns: [
-      /bilibili\.com\/video\/(BV[\w]+)/,
-      /bilibili\.com\/video\/(av[\d]+)/,
-      /b23\.tv\/([\w]+)/,
+      /bilibili\.com\/video\/(BV[\w]+)/i,
+      /bilibili\.com\/video\/(av[\d]+)/i,
+      /b23\.tv\/([\w]+)/i,
     ],
     embedTemplate: (id) => `https://player.bilibili.com/player.html?bvid=${id}`,
   },
   [PLATFORMS.YOUTUBE]: {
     name: 'YouTube',
     patterns: [
-      /youtube\.com\/watch\?v=([\w-]+)/,
-      /youtu\.be\/([\w-]+)/,
-      /youtube\.com\/embed\/([\w-]+)/,
-      /youtube\.com\/v\/([\w-]+)/,
+      /youtube\.com\/watch\?v=([\w-]+)/i,
+      /youtu\.be\/([\w-]+)/i,
+      /youtube\.com\/embed\/([\w-]+)/i,
+      /youtube\.com\/v\/([\w-]+)/i,
     ],
     embedTemplate: (id) => `https://www.youtube.com/embed/${id}`,
   },
   [PLATFORMS.WEIBO]: {
     name: 'Weibo Video',
     patterns: [
-      /weibo\.com\/tv\/show\/([\w:]+)/,
-      /weibo\.com.*\/(\d+:\w+)/,
+      /weibo\.com\/tv\/show\/([\w:]+)/i,
+      /weibo\.com.*\/(\d+:\w+)/i,
     ],
     embedTemplate: (id) => `https://weibo.com/tv/show/${id}`,
   },
   [PLATFORMS.XIAOHONGSHU]: {
     name: 'Xiaohongshu',
     patterns: [
-      /xiaohongshu\.com\/.*\/([\w]+)/,
-      /xhslink\.com\/([\w]+)/,
+      /xiaohongshu\.com\/.*\/([\w]+)/i,
+      /xhslink\.com\/([\w]+)/i,
     ],
     embedTemplate: null, // Xiaohongshu doesn't support iframe embed
   },
   [PLATFORMS.TWITTER]: {
     name: 'Twitter/X',
     patterns: [
-      /twitter\.com\/.*\/status\/([\d]+)/,
-      /x\.com\/.*\/status\/([\d]+)/,
+      /twitter\.com\/.*\/status\/([\d]+)/i,
+      /x\.com\/.*\/status\/([\d]+)/i,
     ],
     embedTemplate: null, // Twitter requires special handling
   },
@@ -75,13 +75,13 @@ export function detectPlatform(url) {
     };
   }
 
-  // Normalize URL
-  const normalizedUrl = url.trim().toLowerCase();
+  // Trim URL but preserve case (video IDs like BV numbers are case-sensitive)
+  const trimmedUrl = url.trim();
 
-  // Try to match each platform
+  // Try to match each platform (patterns use 'i' flag for domain matching)
   for (const [platform, config] of Object.entries(PLATFORM_CONFIGS)) {
     for (const pattern of config.patterns) {
-      const match = normalizedUrl.match(pattern);
+      const match = trimmedUrl.match(pattern);
       if (match) {
         const videoId = match[1];
         const embedUrl = config.embedTemplate ? config.embedTemplate(videoId) : null;
