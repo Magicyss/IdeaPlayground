@@ -86,6 +86,7 @@ export const translations = {
     "clip.selectClip": "选择视频片段",
     "clip.errorEndTime": "结束时间必须晚于开始时间",
     "clip.endAfterStart": "结束时间必须在开始时间之后",
+    "clip.onlineVideoHint": "在线视频请手动输入开始和结束时间",
 
     // Video Importer
     "video.import": "📁 导入视频",
@@ -124,6 +125,7 @@ export const translations = {
     "player.performReps": "执行 {count} 次",
     "player.holdFor": "保持 {seconds} 秒",
     "player.needRest": "需要休息",
+    "player.openInBrowser": "在浏览器中打开视频",
 
     // Rest Timer
     "rest.betweenSets": "组间休息",
@@ -274,6 +276,7 @@ export const translations = {
     "clip.close": "Close",
     "clip.selectClip": "Select Video Clip",
     "clip.errorEndTime": "End time must be after start time",
+    "clip.onlineVideoHint": "For online videos, please enter start and end times manually",
 
     // Video Importer
     "video.import": "📁 Import Videos",
@@ -314,6 +317,7 @@ export const translations = {
     "player.performReps": "Perform {count} repetitions",
     "player.holdFor": "Hold for {seconds} seconds",
     "player.needRest": "Need Rest",
+    "player.openInBrowser": "Open Video in Browser",
 
     // Rest Timer
     "rest.betweenSets": "Rest Between Sets",

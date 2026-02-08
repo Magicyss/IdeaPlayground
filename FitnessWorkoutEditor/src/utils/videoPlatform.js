@@ -117,8 +117,64 @@ export function supportsEmbed(platform) {
 }
 
 /**
- * Parse video URL and extract metadata
- * This is a simplified version - in production, you'd call actual APIs
+ * Fetch Bilibili video metadata via public API
+ * @param {string} videoId - BV or av ID
+ * @returns {Promise<object>} - { title, duration, thumbnail }
+ */
+async function fetchBilibiliInfo(videoId) {
+  try {
+    const isBV = videoId.toUpperCase().startsWith('BV');
+    const param = isBV ? `bvid=${videoId}` : `aid=${videoId.replace(/^av/i, '')}`;
+    const resp = await fetch(`https://api.bilibili.com/x/web-interface/view?${param}`);
+    const json = await resp.json();
+
+    if (json.code === 0 && json.data) {
+      return {
+        title: json.data.title,
+        duration: json.data.duration,
+        thumbnail: json.data.pic,
+      };
+    }
+  } catch (err) {
+    console.warn('Failed to fetch Bilibili video info:', err);
+  }
+  return null;
+}
+
+/**
+ * Fetch YouTube video metadata via oEmbed API (no API key needed)
+ * @param {string} videoId - YouTube video ID
+ * @returns {Promise<object>} - { title, thumbnail }
+ */
+async function fetchYouTubeInfo(videoId) {
+  try {
+    const resp = await fetch(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+    );
+    if (resp.ok) {
+      const json = await resp.json();
+      return {
+        title: json.title,
+        duration: 0, // oEmbed doesn't provide duration
+        thumbnail: json.thumbnail_url,
+      };
+    }
+  } catch (err) {
+    console.warn('Failed to fetch YouTube video info:', err);
+  }
+  return null;
+}
+
+/**
+ * Platform-specific metadata fetchers
+ */
+const PLATFORM_FETCHERS = {
+  [PLATFORMS.BILIBILI]: fetchBilibiliInfo,
+  [PLATFORMS.YOUTUBE]: fetchYouTubeInfo,
+};
+
+/**
+ * Parse video URL and extract metadata using platform APIs
  * @param {string} url - Video URL
  * @returns {Promise<object>} - Video metadata
  */
@@ -129,37 +185,18 @@ export async function parseVideoUrl(url) {
     throw new Error('Unsupported platform or invalid URL');
   }
 
-  // For now, return basic info
-  // In production, you would:
-  // 1. Call platform APIs to get video metadata
-  // 2. Use a backend proxy to handle CORS
-  // 3. Parse video duration, title, thumbnail, etc.
+  // Try to fetch real metadata from the platform API
+  const fetcher = PLATFORM_FETCHERS[platformInfo.platform];
+  let metadata = null;
+  if (fetcher) {
+    metadata = await fetcher(platformInfo.videoId);
+  }
 
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  // Mock response
   return {
     ...platformInfo,
-    title: `${platformInfo.platformName} Video`,
-    duration: 300, // 5 minutes (mock)
-    thumbnail: null,
+    title: metadata?.title || `${platformInfo.platformName} Video`,
+    duration: metadata?.duration || 0,
+    thumbnail: metadata?.thumbnail || null,
     supportsEmbed: supportsEmbed(platformInfo.platform),
   };
-}
-
-/**
- * Get video stream URL (requires backend API)
- * This is a placeholder - actual implementation requires a backend service
- * @param {string} platform - Platform identifier
- * @param {string} videoId - Video ID
- * @returns {Promise<string>} - Direct video URL
- */
-export async function getVideoStreamUrl(platform, videoId) {
-  // This would typically call a backend API that:
-  // 1. Uses platform-specific parsers
-  // 2. Handles authentication and API keys
-  // 3. Returns direct video URLs or m3u8 streams
-
-  throw new Error('Video streaming requires a backend service. This feature is not yet implemented.');
 }

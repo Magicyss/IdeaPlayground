@@ -64,6 +64,34 @@
   max-height: 70vh;
 }
 
+.exercise-iframe {
+  height: 70vh;
+  border: none;
+}
+
+.online-video-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.open-video-link {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  transition: background 0.2s;
+}
+
+.open-video-link:hover {
+  background: var(--primary-dark);
+}
+
 .exercise-info {
   background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.95));
   padding: 2rem;

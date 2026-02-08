@@ -87,24 +87,20 @@ function VideoImporter() {
       // Parse the video URL
       const videoInfo = await parseVideoUrl(videoUrl);
 
-      if (!videoInfo.supportsEmbed) {
-        alert(t('video.platformNotSupported'));
-        setIsParsing(false);
-        return;
-      }
-
       // Create video data object for online video
       const videoData = {
         id: Date.now().toString() + Math.random(),
         type: 'online',
         fileName: videoInfo.title || `${videoInfo.platformName} Video`,
-        url: videoInfo.embedUrl,
+        url: videoInfo.embedUrl || videoInfo.originalUrl,
         originalUrl: videoInfo.originalUrl,
         duration: videoInfo.duration || 0,
         platform: videoInfo.platform,
         platformName: videoInfo.platformName,
         videoId: videoInfo.videoId,
         embedUrl: videoInfo.embedUrl,
+        thumbnail: videoInfo.thumbnail,
+        supportsEmbed: videoInfo.supportsEmbed,
         size: 0, // Online videos don't have size info
       };
 

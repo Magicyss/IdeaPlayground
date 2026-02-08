@@ -28,11 +28,22 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
   const durationTimerRef = useRef(null);
   const currentExercise = workout.exercises[currentExerciseIndex];
 
+  // Check if current exercise uses an online video
+  const isOnlineVideo = currentExercise?.videoSource?.videoType === 'online';
+
   // Get early rest behavior from workout settings or default
   const earlyRestBehavior = workout.globalSettings?.earlyRestBehavior || EARLY_REST_BEHAVIOR.SKIP_TO_NEXT;
 
   // Set video start time when exercise changes
   useEffect(() => {
+    if (isOnlineVideo) {
+      // For online videos, just initialize duration timer if needed
+      if (currentExercise && !isResting && currentExercise.exerciseType === 'duration') {
+        setDurationRemaining(currentExercise.parameters.durationSeconds);
+      }
+      return;
+    }
+
     if (videoRef.current && currentExercise && !isResting) {
       const video = videoRef.current;
       video.currentTime = currentExercise.videoSource.startTime;
@@ -43,7 +54,7 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
         setDurationRemaining(currentExercise.parameters.durationSeconds);
       }
     }
-  }, [currentExerciseIndex, currentSet, isResting, currentExercise]);
+  }, [currentExerciseIndex, currentSet, isResting, currentExercise, isOnlineVideo]);
 
   // Duration timer for duration-based exercises
   useEffect(() => {
@@ -84,6 +95,8 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
 
   // Handle video clip looping and progression
   useEffect(() => {
+    if (isOnlineVideo) return; // Online videos use iframe, no programmatic control
+
     const video = videoRef.current;
     if (!video || !currentExercise || isResting) return;
 
@@ -185,7 +198,7 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
 
   // Handle "Need Rest" button click
   const handleNeedRest = () => {
-    if (videoRef.current) {
+    if (!isOnlineVideo && videoRef.current) {
       videoRef.current.pause();
     }
 
@@ -268,14 +281,14 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
   };
 
   const handleTogglePause = () => {
-    if (videoRef.current) {
+    if (!isOnlineVideo && videoRef.current) {
       if (isPaused) {
         videoRef.current.play();
       } else {
         videoRef.current.pause();
       }
-      setIsPaused(!isPaused);
     }
+    setIsPaused(!isPaused);
   };
 
   if (isCompleted) {
@@ -329,11 +342,34 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
       ) : (
         <div className="exercise-view">
           <div className="video-container">
-            <video
-              ref={videoRef}
-              src={currentExercise.videoSource.videoUrl}
-              className="exercise-video"
-            />
+            {isOnlineVideo ? (
+              currentExercise.videoSource.embedUrl ? (
+                <iframe
+                  src={currentExercise.videoSource.embedUrl}
+                  className="exercise-video exercise-iframe"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  title={currentExercise.exerciseName}
+                />
+              ) : (
+                <div className="online-video-fallback">
+                  <a
+                    href={currentExercise.videoSource.originalUrl || currentExercise.videoSource.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="open-video-link"
+                  >
+                    {t('player.openInBrowser')}
+                  </a>
+                </div>
+              )
+            ) : (
+              <video
+                ref={videoRef}
+                src={currentExercise.videoSource.videoUrl}
+                className="exercise-video"
+              />
+            )}
           </div>
 
           <div className="exercise-info">
@@ -378,6 +414,14 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
             >
               {isPaused ? t('player.resume') : t('player.pause')}
             </button>
+            {isOnlineVideo && currentExercise.exerciseType === 'count' && (
+              <button
+                className="control-button primary"
+                onClick={completeCurrentSet}
+              >
+                {t('player.completeSet')}
+              </button>
+            )}
             <button
               className="control-button"
               onClick={handleSkip}

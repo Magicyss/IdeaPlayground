@@ -34,6 +34,8 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
   useEffect(() => {
     const video = previewVideoRef.current;
     if (!video || !nextExercise) return;
+    // Skip for online videos - they use iframe/thumbnail preview
+    if (nextExercise.videoSource?.videoType === 'online') return;
 
     const { startTime, endTime } = nextExercise.videoSource;
 
@@ -140,13 +142,30 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
           {nextExercise && nextExercise.videoSource && (
             <div className="next-exercise-preview">
               <p className="preview-label">{t('rest.nextExercise')}</p>
-              <video
-                ref={previewVideoRef}
-                src={nextExercise.videoSource.videoUrl}
-                className="preview-video"
-                muted
-                playsInline
-              />
+              {nextExercise.videoSource.videoType === 'online' ? (
+                nextExercise.videoSource.embedUrl ? (
+                  <iframe
+                    src={nextExercise.videoSource.embedUrl}
+                    className="preview-iframe"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    title={nextExercise.exerciseName}
+                  />
+                ) : nextExercise.videoSource.thumbnail ? (
+                  <img
+                    src={nextExercise.videoSource.thumbnail}
+                    alt={nextExercise.exerciseName}
+                    className="preview-thumbnail-img"
+                  />
+                ) : null
+              ) : (
+                <video
+                  ref={previewVideoRef}
+                  src={nextExercise.videoSource.videoUrl}
+                  className="preview-video"
+                  muted
+                  playsInline
+                />
+              )}
               <h3>{nextExercise.exerciseName}</h3>
               <p className="preview-details">{getExerciseDetails(nextExercise)}</p>
             </div>
