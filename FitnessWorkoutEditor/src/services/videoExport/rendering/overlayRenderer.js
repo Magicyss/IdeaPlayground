@@ -35,8 +35,6 @@ export function createOverlayRenderer(width, height) {
   canvas.height = height;
   const ctx = canvas.getContext('2d', { willReadFrequently: false });
 
-  const fonts = getFontSizes(height);
-
   return {
     renderExerciseOverlay(options, translations) {
       const {
@@ -56,8 +54,13 @@ export function createOverlayRenderer(width, height) {
 
       const area = contentArea || { x: 0, y: 0, width, height };
 
+      // Use the smaller dimension (width for portrait, height for landscape) for font scaling
+      // This ensures fonts are proportional to the content area
+      const scaleDimension = Math.min(area.width, area.height);
+      const fonts = getFontSizes(scaleDimension);
+
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      const topBarHeight = area.height * 0.12;
+      const topBarHeight = area.height * 0.08;
       ctx.fillRect(area.x, area.y, area.width, topBarHeight);
 
       ctx.fillStyle = COLORS.text;
@@ -74,19 +77,18 @@ export function createOverlayRenderer(width, height) {
       ctx.fillText(setText, area.x + area.width * 0.97, area.y + topBarHeight / 2);
 
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      const bottomBarHeight = area.height * 0.1;
+      const bottomBarHeight = area.height * 0.06;
       const bottomBarY = area.y + area.height - bottomBarHeight;
-      // Ensure the bottom bar doesn't extend beyond the canvas
-      const clippedBottomBarHeight = Math.min(bottomBarHeight, height - bottomBarY);
-      ctx.fillRect(area.x, bottomBarY, area.width, clippedBottomBarHeight);
+      ctx.fillRect(area.x, bottomBarY, area.width, bottomBarHeight);
 
       ctx.fillStyle = COLORS.highlight;
-      ctx.font = `bold ${fonts.countdown * 0.4}px Arial, sans-serif`;
+      // Use a font size that fits within the bottom bar (60% of bar height)
+      const bottomFontSize = Math.round(bottomBarHeight * 0.6);
+      ctx.font = `bold ${bottomFontSize}px Arial, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      // Position text in the center of the visible bottom bar
-      const textY = bottomBarY + clippedBottomBarHeight / 2;
+      const textY = bottomBarY + bottomBarHeight / 2;
 
       if (exerciseType === 'count') {
         const repText = t('overlay.rep')

@@ -103,6 +103,7 @@ export function createAudioMixer({ sampleRate = 44100, numberOfChannels = 2 }) {
 
 /**
  * Mix AudioBuffers to a single AudioBuffer
+ * Supports looping a specific segment of the source audio
  */
 export async function mixAudioBuffers(sources, totalDuration, sampleRate = 44100, numberOfChannels = 2) {
   const audioContext = new OfflineAudioContext(
@@ -112,22 +113,51 @@ export async function mixAudioBuffers(sources, totalDuration, sampleRate = 44100
   );
 
   for (const source of sources) {
-    const bufferSource = audioContext.createBufferSource();
-    bufferSource.buffer = source.buffer;
+    const sourceBuffer = source.buffer;
+    const sourceStart = source.sourceStart ?? 0;
+    const sourceEnd = source.sourceEnd ?? sourceBuffer.duration;
+    const clipDuration = sourceEnd - sourceStart;
 
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = source.volume ?? 1;
+    // Skip invalid clips
+    if (clipDuration <= 0) continue;
 
-    bufferSource.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    const outputStartTime = source.startTime ?? 0;
+    const outputDuration = source.duration ?? clipDuration;
+    const volume = source.volume ?? 1;
 
-    bufferSource.start(source.startTime ?? 0);
+    if (source.loop && clipDuration > 0) {
+      // For looping audio from a specific segment, we need to create multiple buffer sources
+      let currentOffset = 0;
+      while (currentOffset < outputDuration) {
+        const remainingDuration = outputDuration - currentOffset;
+        const segmentDuration = Math.min(clipDuration, remainingDuration);
 
-    if (source.loop) {
-      bufferSource.loop = true;
-      if (source.duration) {
-        bufferSource.stop(source.startTime + source.duration);
+        const bufferSource = audioContext.createBufferSource();
+        bufferSource.buffer = sourceBuffer;
+
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = volume;
+
+        bufferSource.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Start at the output position, play from sourceStart for segmentDuration
+        bufferSource.start(outputStartTime + currentOffset, sourceStart, segmentDuration);
+
+        currentOffset += clipDuration;
       }
+    } else {
+      // Non-looping: just play from sourceStart
+      const bufferSource = audioContext.createBufferSource();
+      bufferSource.buffer = sourceBuffer;
+
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = volume;
+
+      bufferSource.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      bufferSource.start(outputStartTime, sourceStart, Math.min(clipDuration, outputDuration));
     }
   }
 
