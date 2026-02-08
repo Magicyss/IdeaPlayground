@@ -3,11 +3,12 @@ import './App.css';
 import WorkoutBuilder from './components/WorkoutBuilder/WorkoutBuilder';
 import WorkoutPlayer from './components/WorkoutPlayer/WorkoutPlayer';
 import LanguageSwitcher from './components/LanguageSwitcher/LanguageSwitcher';
-import { WorkoutProvider } from './contexts/WorkoutContext';
+import { WorkoutProvider, useWorkout } from './contexts/WorkoutContext';
 import { I18nProvider, useTranslation } from './i18n/I18nContext';
 
 function AppContent() {
   const { t } = useTranslation();
+  const { dispatch, ACTIONS } = useWorkout();
   const [currentView, setCurrentView] = useState('home'); // 'home', 'editor', 'player'
   const [selectedWorkout, setSelectedWorkout] = useState(null);
 
@@ -37,9 +38,8 @@ function AppContent() {
           throw new Error('Invalid workout plan format');
         }
 
-        // Load the workout data into context
-        // This will be handled when we navigate to editor
-        localStorage.setItem('importedWorkout', JSON.stringify(data));
+        // Dispatch import action to load the workout data
+        dispatch({ type: ACTIONS.IMPORT_WORKOUT, payload: data });
         alert(t('home.importSuccess'));
         setCurrentView('editor');
       } catch (error) {

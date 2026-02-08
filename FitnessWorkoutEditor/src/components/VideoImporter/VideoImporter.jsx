@@ -26,11 +26,11 @@ function VideoImporter() {
 
       // Create object URL for video preview
       const url = URL.createObjectURL(file);
-      
+
       // Get video metadata
       const video = document.createElement('video');
       video.preload = 'metadata';
-      
+
       video.onloadedmetadata = () => {
         const videoData = {
           id: Date.now().toString() + Math.random(),
@@ -39,9 +39,21 @@ function VideoImporter() {
           url, // Keep the URL, don't revoke it - we need it for playback
           duration: video.duration,
           size: file.size,
+          width: video.videoWidth,
+          height: video.videoHeight,
         };
-        
+
         dispatch({ type: ACTIONS.ADD_VIDEO, payload: videoData });
+
+        // Link this video to any imported exercises that match by filename
+        dispatch({
+          type: ACTIONS.LINK_VIDEO_TO_EXERCISES,
+          payload: {
+            videoId: videoData.id,
+            videoUrl: videoData.url,
+            fileName: videoData.fileName,
+          },
+        });
         // Don't revoke the URL here - it's needed for video playback
       };
       

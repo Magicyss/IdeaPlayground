@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useWorkout } from '../../contexts/WorkoutContext';
 import { useTranslation } from '../../i18n/I18nContext';
 import VideoImporter from '../VideoImporter/VideoImporter';
 import ExerciseEditor from '../ExerciseEditor/ExerciseEditor';
+import VideoExporter from '../VideoExporter/VideoExporter';
 import './WorkoutBuilder.css';
 
 function WorkoutBuilder({ onStartWorkout, onBack }) {
@@ -10,6 +11,10 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
   const { t } = useTranslation();
   const [showExerciseEditor, setShowExerciseEditor] = useState(false);
   const [editingExercise, setEditingExercise] = useState(null);
+  const [showVideoExporter, setShowVideoExporter] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const dragNodeRef = useRef(null);
 
   const handleAddExercise = () => {
     setEditingExercise(null);
@@ -41,6 +46,48 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
     if (confirm(t('exercise.confirmDelete'))) {
       dispatch({ type: ACTIONS.REMOVE_EXERCISE, payload: id });
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    dragNodeRef.current = e.target;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    if (dragNodeRef.current) {
+      dragNodeRef.current.classList.remove('dragging');
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    dragNodeRef.current = null;
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === targetIndex) {
+      handleDragEnd();
+      return;
+    }
+
+    const newExercises = [...state.exercises];
+    const [draggedItem] = newExercises.splice(draggedIndex, 1);
+    newExercises.splice(targetIndex, 0, draggedItem);
+
+    dispatch({ type: ACTIONS.REORDER_EXERCISES, payload: newExercises });
+    handleDragEnd();
   };
 
   const handleStartWorkout = () => {
@@ -146,8 +193,18 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
           ) : (
             <div className="exercise-list">
               {state.exercises.map((exercise, index) => (
-                <div key={exercise.id} className="exercise-item card">
+                <div
+                  key={exercise.id}
+                  className={`exercise-item card ${dragOverIndex === index ? 'drag-over' : ''}`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                >
                   <div className="exercise-header">
+                    <span className="drag-handle">⋮⋮</span>
                     <span className="exercise-number">#{index + 1}</span>
                     <h3>{exercise.exerciseName}</h3>
                     <div className="exercise-actions">
@@ -188,12 +245,19 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
             <strong> {t('builder.estimatedDuration')}</strong> {calculateTotalDuration()}
           </div>
           <div className="footer-actions">
-            <button 
-              className="secondary-button" 
+            <button
+              className="secondary-button"
               onClick={handleExportJSON}
               disabled={state.exercises.length === 0}
             >
               {t('builder.exportJSON')}
+            </button>
+            <button
+              className="secondary-button"
+              onClick={() => setShowVideoExporter(true)}
+              disabled={state.exercises.length === 0 || state.videos.length === 0}
+            >
+              {t('export.videoExport')}
             </button>
             <button
               className="primary-button"
@@ -215,6 +279,15 @@ function WorkoutBuilder({ onStartWorkout, onBack }) {
             setShowExerciseEditor(false);
             setEditingExercise(null);
           }}
+        />
+      )}
+
+      {showVideoExporter && (
+        <VideoExporter
+          exercises={state.exercises}
+          videos={state.videos}
+          workoutName={state.workoutName}
+          onClose={() => setShowVideoExporter(false)}
         />
       )}
     </div>

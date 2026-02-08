@@ -48,17 +48,22 @@
   width: 100%;
 }
 
-.video-preview {
+.clip-selector .video-preview {
   margin-bottom: 1.5rem;
   background: #000;
   border-radius: 4px;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.preview-video {
+.clip-selector .preview-video {
   width: 100%;
+  max-width: 100%;
   display: block;
   max-height: 400px;
+  object-fit: contain;
 }
 
 .timeline-controls {

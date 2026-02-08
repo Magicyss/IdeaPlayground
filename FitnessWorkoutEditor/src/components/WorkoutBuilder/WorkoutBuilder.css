@@ -103,6 +103,40 @@
 
 .exercise-item {
   position: relative;
+  cursor: grab;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.exercise-item:active {
+  cursor: grabbing;
+}
+
+.exercise-item.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.exercise-item.drag-over {
+  border: 2px dashed var(--primary-color);
+  background-color: rgba(76, 175, 80, 0.05);
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  user-select: none;
+  letter-spacing: -2px;
+}
+
+.drag-handle:hover {
+  color: var(--primary-color);
+}
+
+.exercise-item:active .drag-handle {
+  cursor: grabbing;
 }
 
 .exercise-header {
