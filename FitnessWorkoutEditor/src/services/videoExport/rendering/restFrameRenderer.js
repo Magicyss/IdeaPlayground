@@ -35,7 +35,10 @@ export function createRestFrameRenderer(width, height) {
   canvas.height = height;
   const ctx = canvas.getContext('2d', { willReadFrequently: false });
 
-  const fonts = getFontSizes(height);
+  // Use the smaller dimension for font scaling to ensure text fits
+  // For portrait videos (1080x1920), use width (1080) instead of height (1920)
+  const scaleDimension = Math.min(width, height);
+  const fonts = getFontSizes(scaleDimension);
 
   return {
     renderRestFrame(options, translations) {
