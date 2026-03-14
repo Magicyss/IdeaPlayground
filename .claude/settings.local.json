@@ -6,7 +6,20 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(gh pr create:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(ls -la \"C:\\\\Repos\\\\IdeaPlayground\\\\FitnessWorkoutEditor\\\\src\"\" 2>&1 || ls -la \"C:ReposIdeaPlaygroundFitnessWorkoutEditor\"\")",
+      "Bash(dir:*)",
+      "Bash(npm run build)",
+      "Bash(gh auth:*)",
+      "Bash(msg:*)",
+      "Bash(git config:*)",
+      "Bash(npm install)",
+      "Bash(timeout:*)",
+      "Bash(xargs cat:*)",
+      "Bash(git restore:*)",
+      "Bash(npm run dev)",
+      "Bash(git reset:*)",
+      "Bash(npx vite build:*)"
     ]
   }
 }

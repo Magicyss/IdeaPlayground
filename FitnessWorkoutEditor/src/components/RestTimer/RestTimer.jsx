@@ -148,6 +148,8 @@ function RestTimer({ duration, type, currentSet, totalSets, nextExercise, onComp
                     src={nextExercise.videoSource.embedUrl}
                     className="preview-iframe"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    referrerPolicy="no-referrer"
+                    sandbox="allow-scripts allow-same-origin allow-popups"
                     title={nextExercise.exerciseName}
                   />
                 ) : nextExercise.videoSource.thumbnail ? (

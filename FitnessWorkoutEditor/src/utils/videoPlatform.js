@@ -23,7 +23,7 @@ const PLATFORM_CONFIGS = {
       /bilibili\.com\/video\/(av[\d]+)/i,
       /b23\.tv\/([\w]+)/i,
     ],
-    embedTemplate: (id) => `https://player.bilibili.com/player.html?bvid=${id}`,
+    embedTemplate: (id) => `https://player.bilibili.com/player.html?bvid=${id}&high_quality=1&danmaku=0&as_wide=1`,
   },
   [PLATFORMS.YOUTUBE]: {
     name: 'YouTube',
@@ -118,6 +118,8 @@ export function supportsEmbed(platform) {
 
 /**
  * Fetch Bilibili video metadata via public API
+ * Note: The Bilibili API blocks CORS requests from browsers.
+ * We try fetching but gracefully fall back to constructing info from the video ID.
  * @param {string} videoId - BV or av ID
  * @returns {Promise<object>} - { title, duration, thumbnail }
  */
@@ -132,13 +134,18 @@ async function fetchBilibiliInfo(videoId) {
       return {
         title: json.data.title,
         duration: json.data.duration,
-        thumbnail: json.data.pic,
+        thumbnail: json.data.pic?.replace(/^http:/, 'https:') || null,
       };
     }
   } catch (err) {
-    console.warn('Failed to fetch Bilibili video info:', err);
+    console.warn('Bilibili API blocked by CORS (expected in browser):', err.message);
   }
-  return null;
+  // Fallback: return video ID as title, no thumbnail
+  return {
+    title: `Bilibili - ${videoId}`,
+    duration: 0,
+    thumbnail: null,
+  };
 }
 
 /**

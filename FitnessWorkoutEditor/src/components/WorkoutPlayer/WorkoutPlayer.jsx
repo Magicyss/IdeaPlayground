@@ -349,6 +349,8 @@ function WorkoutPlayer({ workout, onComplete, onBack }) {
                   className="exercise-video exercise-iframe"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  referrerPolicy="no-referrer"
+                  sandbox="allow-scripts allow-same-origin allow-popups"
                   title={currentExercise.exerciseName}
                 />
               ) : (
